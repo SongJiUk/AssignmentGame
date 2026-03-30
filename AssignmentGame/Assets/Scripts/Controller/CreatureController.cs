@@ -2,16 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CreatureController : MonoBehaviour
+public class CreatureController : BaseController
 {
-    bool isInit = false;
-    public virtual bool Init()
+    public override bool Init()
     {
-        if (isInit) return false;
-        isInit = true;
+        if (!base.Init()) return false;
 
         return true;
-
     }
-
 }
