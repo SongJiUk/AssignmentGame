@@ -4,6 +4,16 @@ using UnityEngine;
 
 public static class Define
 {
+    public enum PlayerState
+    {
+        Idle,
+        Run,
+        HoldHandCuff,
+        Mining,
+        DrillMining,
+        SitMachine
+    }
+
     public enum ItemType
     {
         Money,

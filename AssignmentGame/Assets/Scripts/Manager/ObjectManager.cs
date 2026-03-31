@@ -20,4 +20,15 @@ public class ObjectManager : MonoBehaviour
         player.transform.position = _pos;
         return player;
     }
+
+    public Mineral SpawnMineral(Vector3 _pos)
+    {
+        GameObject go = Managers.ResourceM.Instantiate("Mineral", _pooling: true);
+        if (go == null) return null;
+
+        Mineral mineral = go.GetOrAddComponent<Mineral>();
+        mineral.transform.position = _pos;
+        return mineral;
+        
+    }
 }

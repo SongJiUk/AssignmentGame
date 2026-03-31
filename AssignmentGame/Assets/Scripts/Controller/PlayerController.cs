@@ -3,14 +3,23 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using static Define;
+using static Util;
 
 public class PlayerController : CreatureController
 {
     Joystick joyStick;
-    float moveSpeed = 3f;
+    Animator anim;
+    const float moveSpeed = 3f;
+    const float moveToRot = 5f;
+    Define.PlayerState currentState = PlayerState.Idle;
+    int handCuffCount;
+    MineralZone zone;
     public override bool Init()
     {
         if (!base.Init()) return false;
+        if (anim == null) anim = gameObject.GetComponent<Animator>();
+
 
         return true;
     }
@@ -25,6 +34,25 @@ public class PlayerController : CreatureController
         joyStick = _joystick;
     }
 
+
+    public void OnMineralEnter(MineralZone _zone)
+    {
+        zone = _zone;
+        anim.SetBool("IsMining", true);
+    }
+
+    public void OnMineralExit()
+    {
+        anim.SetBool("IsMining", false);
+    }
+
+    public void OnMiningAnimEnd()
+    {
+        Mineral mineral = zone.GetNearesMineral(transform.position);
+        mineral.gameObject.SetActive(false);
+        Debug.Log("Here");
+    }
+
     private void Update()
     {
         if (joyStick == null) return;
@@ -32,9 +60,31 @@ public class PlayerController : CreatureController
         float x = joyStick.Horizontal;
         float y = joyStick.Vertical;
 
-        if (Mathf.Abs(x) < 0.1f && Mathf.Abs(y) < 0.1f) return;
+        if (Mathf.Abs(x) < 0.1f && Mathf.Abs(y) < 0.1f)
+        {
+            if(currentState != PlayerState.Idle)
+            {
+                anim.SetState(Define.PlayerState.Idle);
+                currentState = PlayerState.Idle;
+            }
+
+            return;
+        }
+        
+        PlayerState nextState = handCuffCount > 0 ? PlayerState.HoldHandCuff : PlayerState.Run;
+    
+        if(currentState != nextState)
+        {
+            currentState = nextState;
+            anim.SetState(currentState);
+        }
+        
 
         Vector3 dir = new Vector3(x, 0, y).normalized;
-        transform.position += dir * Time.deltaTime* moveSpeed;
+        transform.position += dir * Time.deltaTime * moveSpeed;
+        var rot = Quaternion.LookRotation(dir);
+
+        transform.rotation = Quaternion.Slerp(transform.rotation, rot, Time.deltaTime * moveToRot);
+
     }
 }

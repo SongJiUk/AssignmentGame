@@ -1,0 +1,83 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class MineralZone : BaseController
+{
+    const float spacing = 1.1f;
+    const int col = 8;
+    const int row = 17;
+
+    private List<Mineral> minerals = new();
+
+
+    private void Start()
+    {
+        Init();
+    }
+
+    public override bool Init()
+    {
+        if (!base.Init()) return false;
+        float totalX = (col - 1) * spacing;
+        float totalZ = (row - 1) * spacing;
+
+        Vector3 origin = transform.position - new Vector3(totalX / 2f, 0, totalZ/2f);
+
+        for(int r = 0; r < row; r++)
+        {
+            for(int c = 0; c<col; c++)
+            {
+                Vector3 pos = origin + new Vector3(c * spacing, 0, r * spacing);
+                Mineral mineral = Managers.ObjectM.SpawnMineral(pos);
+                if (mineral == null) continue;
+                minerals.Add(mineral);
+            }
+        }
+
+        return true;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.layer != LayerMask.NameToLayer("Player")) return;
+
+        PlayerController player = other.GetComponent<PlayerController>();
+        if (player == null) return;
+
+        player.OnMineralEnter(this);
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject.layer != LayerMask.NameToLayer("Player")) return;
+
+        PlayerController player = other.GetComponent<PlayerController>();
+        if (player == null) return;
+
+        player.OnMineralExit();
+    }
+
+    public Mineral GetNearesMineral(Vector3 _pos)
+    {
+        Mineral nearMineral = null;
+        float minDist = float.MaxValue;
+
+
+        foreach(var m in minerals)
+        {
+            if (m == null) continue;
+            if (!m.gameObject.activeSelf) continue;
+
+            float dist = (_pos - m.transform.position).sqrMagnitude;
+
+            if(dist <minDist)
+            {
+                minDist = dist;
+                nearMineral = m;
+            }
+        }
+
+        return nearMineral;
+    }
+}

@@ -9,7 +9,7 @@ public class GameManager
     public void Init()
     {
         player = Managers.ObjectM.SpawnPlayer(Vector3.zero);
-
+        
         Joystick joystick = GameObject.Find("Joystick").GetComponent<Joystick>();
         player.SetJoyStick(joystick);
     }
