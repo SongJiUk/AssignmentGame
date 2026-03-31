@@ -11,6 +11,9 @@ public class FollowStackSystem : MonoBehaviour
     Stack<Transform> mineralStack = new();
     Stack<Transform> moneyStack = new();
 
+    public int MineralCount => mineralStack.Count;
+    public int MoneyCount => moneyStack.Count;
+
     public void AddMineral()
     {
         int number = mineralStack.Count;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using System.Threading;
+using System;
 
 public class MachineZone : BaseController
 {
@@ -42,12 +43,25 @@ public class MachineZone : BaseController
 
     async UniTaskVoid AsyncCheck(PlayerController _player, CancellationTokenSource _token)
     {
-        Transform mineral = _player.FollowStackSystem.RemoveMineral();
-        if (mineral != null)
+        try
+        {
+            while (_player.FollowStackSystem.MineralCount > 0)
+            {
+                Transform mineral = _player.FollowStackSystem.RemoveMineral();
+                if (mineral != null)
+                {
+
+                }
+
+
+                await UniTask.Delay(TimeSpan.FromSeconds(0.3f), cancellationToken: _token.Token);
+            }
+        }
+        catch (OperationCanceledException)
         {
 
         }
-        else return;
+
     }
 
 }
