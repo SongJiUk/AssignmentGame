@@ -8,8 +8,12 @@ using static Util;
 
 public class PlayerController : CreatureController
 {
+
+
     Joystick joyStick;
     Animator anim;
+    FollowStackSystem followStackSystem;
+    public FollowStackSystem FollowStackSystem { get { return followStackSystem; } }
     const float moveSpeed = 3f;
     const float moveToRot = 5f;
     Define.PlayerState currentState = PlayerState.Idle;
@@ -19,7 +23,7 @@ public class PlayerController : CreatureController
     {
         if (!base.Init()) return false;
         if (anim == null) anim = gameObject.GetComponent<Animator>();
-
+        if (followStackSystem == null) followStackSystem = gameObject.GetComponent<FollowStackSystem>();
 
         return true;
     }
@@ -49,8 +53,10 @@ public class PlayerController : CreatureController
     public void OnMiningAnimEnd()
     {
         Mineral mineral = zone.GetNearesMineral(transform.position);
+        mineral.Mining();
+        zone.ReSpawnMineral(mineral, mineral.reSpawnTime);
         mineral.gameObject.SetActive(false);
-        Debug.Log("Here");
+        //TODO : 등 뒤로 옮겨져서 올라가야됌
     }
 
     private void Update()
@@ -62,7 +68,7 @@ public class PlayerController : CreatureController
 
         if (Mathf.Abs(x) < 0.1f && Mathf.Abs(y) < 0.1f)
         {
-            if(currentState != PlayerState.Idle)
+            if (currentState != PlayerState.Idle)
             {
                 anim.SetState(Define.PlayerState.Idle);
                 currentState = PlayerState.Idle;
@@ -70,15 +76,15 @@ public class PlayerController : CreatureController
 
             return;
         }
-        
+
         PlayerState nextState = handCuffCount > 0 ? PlayerState.HoldHandCuff : PlayerState.Run;
-    
-        if(currentState != nextState)
+
+        if (currentState != nextState)
         {
             currentState = nextState;
             anim.SetState(currentState);
         }
-        
+
 
         Vector3 dir = new Vector3(x, 0, y).normalized;
         transform.position += dir * Time.deltaTime * moveSpeed;

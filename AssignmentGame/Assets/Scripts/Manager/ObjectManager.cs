@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using DG.Tweening;
+
 
 public class ObjectManager : MonoBehaviour
 {
@@ -29,6 +31,19 @@ public class ObjectManager : MonoBehaviour
         Mineral mineral = go.GetOrAddComponent<Mineral>();
         mineral.transform.position = _pos;
         return mineral;
-        
+    }
+
+    public Transform SpawnBackMineral(Vector3 _pos)
+    {
+        GameObject go = Managers.ResourceM.Instantiate("BackMineral", _pooling: true);
+        if (go == null) return null;
+
+        go.transform.position = _pos;
+        Vector3 originalScale = go.transform.localScale;
+        go.transform.DOScale(originalScale, 0.3f)
+        .From(Vector3.zero)
+        .SetEase(Ease.OutBack);
+
+        return go.transform;
     }
 }

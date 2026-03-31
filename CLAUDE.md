@@ -131,12 +131,36 @@ WaypointPath (빈 GameObject)
 
 ---
 
+## 구현 진행 현황
+
+### 완료
+- [x] **BaseController** — Init() 중복 방지 패턴
+- [x] **PlayerController** — 조이스틱 이동, 애니메이션 상태 전환
+- [x] **MineralZone** — 8×17 그리드 배치, 트리거 감지, 가장 가까운 Mineral 반환, 리스폰 타이머
+- [x] **Mineral** — hp 관리, OnEnable() hp 리셋, Mining() 훅
+- [x] **PoolManager** — Unity ObjectPool 기반 Pop/Push
+- [x] **ObjectManager** — SpawnPlayer, SpawnMineral
+- [x] **GameManager** — 플레이어 스폰 + 조이스틱 연결
+- [x] **바닥 미네랄 리스폰** — 채굴 후 SetActive(false) → UniTask 딜레이 → SetActive(true)
+
+### 결정 사항
+- 바닥 미네랄은 풀링 없이 SetActive 토글로 처리 (위치 고정, MineralZone이 참조 보유)
+- 풀링은 동적 생성 아이템에만 적용 (등뒤 미네랄 아이템, 수갑, 돈 이펙트)
+- 리스폰 타이머는 MineralZone이 담당 (Mineral은 SetActive 시 꺼지므로)
+
+### 다음 작업
+- [ ] **FollowStackSystem** — 채굴 후 등뒤 스택에 미네랄 아이템 쌓기
+- [ ] **ItemFlyAnimation** — 미네랄이 플레이어 등뒤로 날아가는 포물선 연출
+
+---
+
 ## AI 활용 규칙 (Claude Code용)
 - 새 시스템 작성 전 반드시 **설계 먼저 확인** 후 구현 요청
 - 코드 받은 후 **반드시 로직 설명 요청** ("이 부분 왜 이렇게 했어?")
 - 버그 발생 시 **에러 메시지 + 관련 코드 전체** 첨부
 - 최적화 이슈 시 **Profiler 수치** 함께 제공
 - 한 번에 하나의 시스템만 요청 (범위 작게)
+- "코드 직접 확인해봐" 또는 이와 유사한 말을 하면 → 관련 파일을 직접 열어서 확인할 것 (코드를 붙여넣으라고 요청하지 말 것)
 
 ---
 

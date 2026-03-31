@@ -14,6 +14,15 @@ public static class Define
         SitMachine
     }
 
+    public enum WeaponState
+    {
+        Pick,
+        Drill,
+        SitMachine,
+        MineWorker
+
+    }
+
     public enum ItemType
     {
         Money,
