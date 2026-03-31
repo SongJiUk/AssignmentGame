@@ -46,4 +46,12 @@ public class ObjectManager : MonoBehaviour
 
         return go.transform;
     }
+
+    public void DeSpawn<T>(T _obj) where T : Component
+    {
+        if (_obj == null) return;
+
+        Managers.ResourceM.Destroy(_obj.gameObject);
+
+    }
 }

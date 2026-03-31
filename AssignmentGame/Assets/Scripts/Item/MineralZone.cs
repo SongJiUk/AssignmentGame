@@ -36,54 +36,12 @@ public class MineralZone : BaseController
                 Vector3 pos = origin + new Vector3(c * spacing, 0, r * spacing);
                 Mineral mineral = Managers.ObjectM.SpawnMineral(pos);
                 if (mineral == null) continue;
+                mineral.zone = this;
                 minerals.Add(mineral);
             }
         }
 
         return true;
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.gameObject.layer != LayerMask.NameToLayer("Player")) return;
-
-        PlayerController player = other.GetComponent<PlayerController>();
-        if (player == null) return;
-
-        player.OnMineralEnter(this);
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.gameObject.layer != LayerMask.NameToLayer("Player")) return;
-
-        PlayerController player = other.GetComponent<PlayerController>();
-        if (player == null) return;
-
-        player.OnMineralExit();
-    }
-
-    public Mineral GetNearesMineral(Vector3 _pos)
-    {
-        Mineral nearMineral = null;
-        float minDist = float.MaxValue;
-
-
-        foreach (var m in minerals)
-        {
-            if (m == null) continue;
-            if (!m.gameObject.activeSelf) continue;
-
-            float dist = (_pos - m.transform.position).sqrMagnitude;
-
-            if (dist < minDist)
-            {
-                minDist = dist;
-                nearMineral = m;
-            }
-        }
-
-        return nearMineral;
     }
 
     public void ReSpawnMineral(Mineral _mineral, float _delay)

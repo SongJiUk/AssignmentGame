@@ -18,7 +18,7 @@ public class PlayerController : CreatureController
     const float moveToRot = 5f;
     Define.PlayerState currentState = PlayerState.Idle;
     int handCuffCount;
-    MineralZone zone;
+    Mineral mineral;
     public override bool Init()
     {
         if (!base.Init()) return false;
@@ -39,24 +39,28 @@ public class PlayerController : CreatureController
     }
 
 
-    public void OnMineralEnter(MineralZone _zone)
+    public void OnMineralEnter(Mineral _mineral)
     {
-        zone = _zone;
+        bool IsMining = anim.GetBool("IsMining");
+        mineral = _mineral;
+
+        if (IsMining) return;
+
+
         anim.SetBool("IsMining", true);
     }
 
-    public void OnMineralExit()
+    public void OnMineralExit(Mineral _mineral)
     {
+        if (mineral != _mineral) return;
         anim.SetBool("IsMining", false);
     }
 
     public void OnMiningAnimEnd()
     {
-        Mineral mineral = zone.GetNearesMineral(transform.position);
         mineral.Mining();
-        zone.ReSpawnMineral(mineral, mineral.reSpawnTime);
+        mineral.zone.ReSpawnMineral(mineral, mineral.reSpawnTime);
         mineral.gameObject.SetActive(false);
-        //TODO : 등 뒤로 옮겨져서 올라가야됌
     }
 
     private void Update()

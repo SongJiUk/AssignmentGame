@@ -284,7 +284,7 @@ GameObject:
   - component: {fileID: 103058431}
   - component: {fileID: 103058430}
   m_Layer: 0
-  m_Name: Cube (1)
+  m_Name: Machine2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1191,6 +1191,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 456007691}
+  - component: {fileID: 456007692}
   m_Layer: 0
   m_Name: Machine
   m_TagString: Untagged
@@ -1211,12 +1212,26 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1279749412}
+  - {fileID: 1591404229}
   - {fileID: 1780825446}
   - {fileID: 103058433}
   - {fileID: 1390243208}
   - {fileID: 1417242929}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &456007692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 456007690}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ddad6813960344cca9a98fb1ca76ae0f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -2289,6 +2304,7 @@ GameObject:
   - component: {fileID: 1279749411}
   - component: {fileID: 1279749410}
   - component: {fileID: 1279749409}
+  - component: {fileID: 1279749413}
   m_Layer: 0
   m_Name: HandCuffZone
   m_TagString: Untagged
@@ -2311,7 +2327,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -2375,13 +2391,25 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1279749408}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: -0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -5.09, y: 0.14, z: -7.59}
-  m_LocalScale: {x: 1.2523233, y: 0.2259865, z: 2.0100188}
+  m_LocalRotation: {x: -0, y: -0.7071068, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: 0.5039997, y: -0.48000002, z: -1.96}
+  m_LocalScale: {x: 1.2523232, y: 0.04871817, z: 2.0100188}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 456007691}
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
+--- !u!114 &1279749413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1279749408}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0d69c0e87654c427286fd5fc6cb3c0b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1359388490
 GameObject:
   m_ObjectHideFlags: 0
@@ -2500,7 +2528,7 @@ GameObject:
   - component: {fileID: 1390243206}
   - component: {fileID: 1390243205}
   m_Layer: 0
-  m_Name: Cube (2)
+  m_Name: Machine3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2605,7 +2633,7 @@ GameObject:
   - component: {fileID: 1417242927}
   - component: {fileID: 1417242926}
   m_Layer: 0
-  m_Name: Cube (3)
+  m_Name: Machine4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2919,6 +2947,7 @@ GameObject:
   - component: {fileID: 1591404228}
   - component: {fileID: 1591404227}
   - component: {fileID: 1591404226}
+  - component: {fileID: 1591404230}
   m_Layer: 0
   m_Name: MachineZone
   m_TagString: Untagged
@@ -2941,7 +2970,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -3005,13 +3034,25 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1591404225}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.56, y: -0.02, z: -1.71}
-  m_LocalScale: {x: 1.2523233, y: 0.2259865, z: 2.0100188}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 2.034, y: -0.64, z: 3.92}
+  m_LocalScale: {x: 1.2523233, y: 0.056114707, z: 2.0100188}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 456007691}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1591404230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1591404225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 92c8401d2ce1b4d0e99e0d5100ef944c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1780825445
 GameObject:
   m_ObjectHideFlags: 0
@@ -3025,7 +3066,7 @@ GameObject:
   - component: {fileID: 1780825448}
   - component: {fileID: 1780825447}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: Machine1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3789,7 +3830,6 @@ SceneRoots:
   - {fileID: 963194228}
   - {fileID: 705507995}
   - {fileID: 456007691}
-  - {fileID: 1279749412}
   - {fileID: 154558155}
   - {fileID: 1473078375}
   - {fileID: 1564481350}
@@ -3799,7 +3839,6 @@ SceneRoots:
   - {fileID: 1168024709}
   - {fileID: 1359388494}
   - {fileID: 387254763}
-  - {fileID: 1591404229}
   - {fileID: 366667508}
   - {fileID: 92773495}
   - {fileID: 1043049644}

@@ -6,7 +6,7 @@ public class Mineral : BaseController
 {
     public float reSpawnTime = 5f;
     public int hp = 3;
-
+    public MineralZone zone;
 
     void OnEnable()
     {
@@ -14,8 +14,19 @@ public class Mineral : BaseController
     }
     public void Mining()
     {
-        //TODO : 플레이어 등 뒤로 특정 오브젝트를 풀링해서 플레이어의 등 뒤에 스택으로 쌓아줌
         Managers.GameM.player.FollowStackSystem.AddMineral();
+        Managers.GameM.player.OnMineralExit(this);
+    }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.layer != LayerMask.NameToLayer("Player")) return;
+        Managers.GameM.player.OnMineralEnter(this);
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject.layer != LayerMask.NameToLayer("Player")) return;
+        Managers.GameM.player.OnMineralExit(this);
     }
 }
