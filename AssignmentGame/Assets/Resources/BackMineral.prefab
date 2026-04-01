@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 1286465459996580865}
   - component: {fileID: 4664802273633188667}
   - component: {fileID: 2432832809932226400}
-  m_Layer: 6
+  m_Layer: 7
   m_Name: BackMineral
   m_TagString: Untagged
   m_Icon: {fileID: 0}

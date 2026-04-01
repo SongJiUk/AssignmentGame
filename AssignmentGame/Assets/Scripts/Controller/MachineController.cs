@@ -7,9 +7,8 @@ using System;
 public class MachineController : BaseController
 {
 
-    float convertDelay = 1f;
+    float convertDelay = 0.5f;
 
-    Stack<Transform> inputStack = new();
     private bool isRunning = false;
     HandCuffZone handCuffZone;
     MachineZone machineZone;
@@ -24,6 +23,7 @@ public class MachineController : BaseController
         if (!base.Init()) return false;
         if (handCuffZone == null) handCuffZone = gameObject.GetComponentInChildren<HandCuffZone>();
         if (machineZone == null) machineZone = gameObject.GetComponentInChildren<MachineZone>();
+        machineZone.OnMineralArrive += AddMineral;
 
         return true;
     }
@@ -31,8 +31,6 @@ public class MachineController : BaseController
 
     public void AddMineral(Transform _mineral)
     {
-        inputStack.Push(_mineral);
-
         if (!isRunning)
             AsyncConvert().Forget();
     }
@@ -41,16 +39,26 @@ public class MachineController : BaseController
     async UniTaskVoid AsyncConvert()
     {
         isRunning = true;
-        while (inputStack.Count > 0)
-        {
-            Transform mineral = inputStack.Pop();
-            Managers.ObjectM.DeSpawn<Transform>(mineral);
-            await UniTask.Delay(TimeSpan.FromSeconds(convertDelay));
 
+        await UniTask.WaitUntil(() => machineZone.InFlightCount == 0);
+
+        while (machineZone.MineralCount > 0)
+        {
+            Transform mineral = machineZone.RemoveMineral();
+            await UniTask.Delay(TimeSpan.FromSeconds(convertDelay));
+            Managers.ObjectM.DeSpawn<Transform>(mineral);
 
             handCuffZone.AddHandCuff();
         }
 
         isRunning = false;
     }
+
+
+    //재정렬코드(시작할때 첫번째게 빠져보이면 위가 비어보임)
+    void OnDestroy()
+    {
+        machineZone.OnMineralArrive -= AddMineral;
+    }
+
 }
