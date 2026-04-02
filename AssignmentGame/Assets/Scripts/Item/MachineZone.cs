@@ -11,7 +11,7 @@ public class MachineZone : BaseController
     public event Action<Transform> OnMineralArrive;
     Stack<Transform> convertStack = new();
     public int MineralCount => convertStack.Count;
-    public int InFlightCount { get; private set; }
+
     private CancellationTokenSource cts;
     public int reserveSlotNum = 0;
 
@@ -21,12 +21,9 @@ public class MachineZone : BaseController
 
     void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
-        {
+        if (other.gameObject.layer != LayerMask.NameToLayer("Player")) return;
 
-        }
-
-        StartCheck(Managers.GameM.player);
+        StartCheckZone(Managers.GameM.player);
     }
 
     void OnTriggerExit(Collider other)
@@ -36,10 +33,12 @@ public class MachineZone : BaseController
         StopCheck();
     }
 
-    public void StartCheck(PlayerController _player)
+    public void StartCheckZone(PlayerController _player)
     {
+        cts?.Cancel();
+        cts?.Dispose();
         cts = new CancellationTokenSource();
-        AsyncCheck(_player, cts).Forget();
+        AsyncCheckZone(_player, cts).Forget();
     }
 
     public void StopCheck()
@@ -62,18 +61,17 @@ public class MachineZone : BaseController
         centerPos.y + spacingY * row,
         centerPos.z + spacingZ * (col == 0 ? -0.2f : 0.2f));
 
-        InFlightCount++;
+
+        convertStack.Push(_mineral);
+        OnMineralArrive?.Invoke(_mineral);
+
         Vector3 originScale = _mineral.localScale;
         _mineral.DOJump(targetPos, jumpPower: 2f, numJumps: 1, duration: 0.1f)
         .OnComplete(() =>
         {
-            InFlightCount--;
             _mineral.DOScale(originScale, 0.3f)
             .From(Vector3.zero)
             .SetEase(Ease.OutBack);
-
-            convertStack.Push(_mineral);
-            OnMineralArrive?.Invoke(_mineral);
         });
     }
 
@@ -83,7 +81,7 @@ public class MachineZone : BaseController
         reserveSlotNum--;
         return convertStack.Pop();
     }
-    async UniTaskVoid AsyncCheck(PlayerController _player, CancellationTokenSource _token)
+    async UniTaskVoid AsyncCheckZone(PlayerController _player, CancellationTokenSource _token)
     {
         try
         {

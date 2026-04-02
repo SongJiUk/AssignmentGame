@@ -58,4 +58,17 @@ public class Managers : MonoBehaviour
     {
         instance = null;
     }
+
+    private void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.K))
+        {
+            GameM.player.OnChangeHoldHandCuff(true);
+        }
+
+        if (Input.GetKeyDown(KeyCode.L))
+        {
+            GameM.player.OnChangeHoldHandCuff(false);
+        }
+    }
 }

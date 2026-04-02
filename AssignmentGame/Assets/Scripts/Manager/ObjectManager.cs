@@ -47,6 +47,39 @@ public class ObjectManager : MonoBehaviour
         return go.transform;
     }
 
+    public Transform SpawnHandCuff(Vector3 _pos)
+    {
+        GameObject go = Managers.ResourceM.Instantiate("HandCuffs", _pooling: true);
+        if (go == null) return null;
+
+        go.transform.position = _pos;
+        Vector3 originScale = go.transform.localScale;
+        go.transform.DOScale(originScale, 0.3f)
+            .From(Vector3.zero)
+            .SetEase(Ease.OutBack);
+
+        return go.transform;
+    }
+
+    public PrisonerController SpawnPrisoner(Vector3 _pos)
+    {
+        GameObject go = Managers.ResourceM.Instantiate("Prisoner", _pooling: true);
+        if (go == null) return null;
+
+        PrisonerController prisoner =  go.GetOrAddComponent<PrisonerController>();
+        prisoner.transform.position = _pos;
+        return prisoner;
+    }
+
+    public Transform SpawnMoney(Vector3 _pos)
+    {
+        GameObject go = Managers.ResourceM.Instantiate("Money", _pooling: true);
+        if (go == null) return null;
+
+        go.transform.position = _pos;
+        return go.transform;
+    }
+
     public void DeSpawn<T>(T _obj) where T : Component
     {
         if (_obj == null) return;

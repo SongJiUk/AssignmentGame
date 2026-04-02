@@ -4,14 +4,23 @@ using UnityEngine;
 
 public static class Define
 {
-    public enum PlayerState
+    public enum State
     {
         Idle,
         Run,
-        HoldHandCuff,
         Mining,
         DrillMining,
         SitMachine
+    }
+
+    public enum PrisonorState
+    { 
+        Waiting,
+        WaitingInLine,
+        WaitingHandCuff,
+        WalkingRoom,
+        WaitingRoom,
+        InRoom
     }
 
     public enum WeaponState
@@ -38,4 +47,9 @@ public static class Define
         OnGround,
     }
 
+    public enum UnLockType
+    {
+        Drill,
+        MiningMachine,
+    }
 }

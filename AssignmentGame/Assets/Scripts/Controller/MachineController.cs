@@ -40,14 +40,13 @@ public class MachineController : BaseController
     {
         isRunning = true;
 
-        await UniTask.WaitUntil(() => machineZone.InFlightCount == 0);
+        await UniTask.Delay(TimeSpan.FromSeconds(0.5f));
 
         while (machineZone.MineralCount > 0)
         {
             Transform mineral = machineZone.RemoveMineral();
             await UniTask.Delay(TimeSpan.FromSeconds(convertDelay));
             Managers.ObjectM.DeSpawn<Transform>(mineral);
-
             handCuffZone.AddHandCuff();
         }
 
@@ -55,7 +54,6 @@ public class MachineController : BaseController
     }
 
 
-    //재정렬코드(시작할때 첫번째게 빠져보이면 위가 비어보임)
     void OnDestroy()
     {
         machineZone.OnMineralArrive -= AddMineral;

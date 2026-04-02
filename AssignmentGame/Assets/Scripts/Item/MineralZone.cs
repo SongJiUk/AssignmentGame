@@ -21,6 +21,22 @@ public class MineralZone : BaseController
         Init();
     }
 
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
+        {
+            Managers.GameM.player.EquipPick(true);
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
+        {
+            Managers.GameM.player.EquipPick(false);
+        }
+    }
+
     public override bool Init()
     {
         if (!base.Init()) return false;

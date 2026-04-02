@@ -9,14 +9,16 @@ using static Util;
 public class PlayerController : CreatureController
 {
 
-
+    [SerializeField] GameObject pick;
+    [SerializeField] GameObject drill;
+    [SerializeField] GameObject miningMachine;
     Joystick joyStick;
     Animator anim;
     FollowStackSystem followStackSystem;
     public FollowStackSystem FollowStackSystem { get { return followStackSystem; } }
     const float moveSpeed = 3f;
     const float moveToRot = 5f;
-    Define.PlayerState currentState = PlayerState.Idle;
+    Define.State currentState = State.Idle;
     int handCuffCount;
     Mineral mineral;
     public override bool Init()
@@ -24,10 +26,20 @@ public class PlayerController : CreatureController
         if (!base.Init()) return false;
         if (anim == null) anim = gameObject.GetComponent<Animator>();
         if (followStackSystem == null) followStackSystem = gameObject.GetComponent<FollowStackSystem>();
-
+        EquipPick(false);
+        drill.SetActive(false);
+        miningMachine.SetActive(false);
         return true;
     }
 
+    public void EquipPick(bool _isEquip)
+    {
+        pick.SetActive(_isEquip);
+    }
+    public void OnChangeHoldHandCuff(bool _isHold)
+    {
+        anim.SetBool("IsHoldHandCuff", _isHold);
+    }
     public void OnInArea()
     {
 
@@ -63,6 +75,21 @@ public class PlayerController : CreatureController
         mineral.gameObject.SetActive(false);
     }
 
+    public void OnUnLock(Define.UnLockType _type)
+    {
+        switch(_type)
+        {
+            case Define.UnLockType.Drill:
+                //드릴 활성화 + 애니메이션 전환
+                break;
+
+            case Define.UnLockType.MiningMachine:
+                //기계 활성화 + 애니메이션 전환
+                break;
+
+        }
+    }
+
     private void Update()
     {
         if (joyStick == null) return;
@@ -72,16 +99,16 @@ public class PlayerController : CreatureController
 
         if (Mathf.Abs(x) < 0.1f && Mathf.Abs(y) < 0.1f)
         {
-            if (currentState != PlayerState.Idle)
+            if (currentState != State.Idle)
             {
-                anim.SetState(Define.PlayerState.Idle);
-                currentState = PlayerState.Idle;
+                anim.SetState(Define.State.Idle);
+                currentState = State.Idle;
             }
 
             return;
         }
 
-        PlayerState nextState = handCuffCount > 0 ? PlayerState.HoldHandCuff : PlayerState.Run;
+        State nextState = State.Run;
 
         if (currentState != nextState)
         {

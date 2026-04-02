@@ -6,9 +6,9 @@ public static class Util
 {
    
 
-    public static void SetState(this Animator _animator, Define.PlayerState _state)
+    public static void SetState(this Animator _animator, Define.State _state)
     {
-        _animator.SetInteger("PlayerState", (int)_state);
+        _animator.SetInteger("State", (int)_state);
     }
 
 }
