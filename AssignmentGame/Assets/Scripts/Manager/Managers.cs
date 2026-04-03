@@ -7,6 +7,7 @@ public class Managers : MonoBehaviour
 
     static Managers instance;
 
+    UIManager uiManager = null;
     readonly GameManager gameManager = new();
     readonly ResourceManager resourceManager = new();
     readonly ObjectManager objectManager = new();
@@ -16,6 +17,7 @@ public class Managers : MonoBehaviour
     public static ResourceManager ResourceM { get { return Instance?.resourceManager; } }
     public static ObjectManager ObjectM { get { return Instance?.objectManager; } }
     public static PoolManager PoolM { get { return Instance?.poolManager; } }
+    public static UIManager UIM { get { return Instance?.uiManager; } }
 
 
     public static Managers Instance
@@ -32,7 +34,7 @@ public class Managers : MonoBehaviour
             }
             DontDestroyOnLoad(go);
             instance = go.GetComponent<Managers>();
-
+            instance.uiManager = go.GetComponent<UIManager>();
 
             return instance;
 
@@ -41,7 +43,7 @@ public class Managers : MonoBehaviour
 
     private void Awake()
     {
-        if(instance != null && instance != this)
+        if (instance != null && instance != this)
         {
             Destroy(gameObject);
             return;
@@ -49,6 +51,7 @@ public class Managers : MonoBehaviour
 
         instance = this;
         DontDestroyOnLoad(gameObject);
+        uiManager = GetComponent<UIManager>();
 
         Managers.GameM.Init();
     }
@@ -61,7 +64,7 @@ public class Managers : MonoBehaviour
 
     private void Update()
     {
-        if(Input.GetKeyDown(KeyCode.K))
+        if (Input.GetKeyDown(KeyCode.K))
         {
             GameM.player.OnChangeHoldHandCuff(true);
         }

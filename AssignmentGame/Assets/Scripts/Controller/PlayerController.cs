@@ -12,6 +12,9 @@ public class PlayerController : CreatureController
     [SerializeField] GameObject pick;
     [SerializeField] GameObject drill;
     [SerializeField] GameObject miningMachine;
+    [SerializeField] WeaponData currentWeaponData;
+    public WeaponData CurrentWeaponData => currentWeaponData;
+    GameObject currentWeapon;
     Joystick joyStick;
     Animator anim;
     FollowStackSystem followStackSystem;
@@ -19,13 +22,15 @@ public class PlayerController : CreatureController
     const float moveSpeed = 3f;
     const float moveToRot = 5f;
     Define.State currentState = State.Idle;
-    int handCuffCount;
     Mineral mineral;
+    bool isBoardingMachine = false;
     public override bool Init()
     {
         if (!base.Init()) return false;
         if (anim == null) anim = gameObject.GetComponent<Animator>();
         if (followStackSystem == null) followStackSystem = gameObject.GetComponent<FollowStackSystem>();
+        currentWeapon = pick;
+
         EquipPick(false);
         drill.SetActive(false);
         miningMachine.SetActive(false);
@@ -34,15 +39,11 @@ public class PlayerController : CreatureController
 
     public void EquipPick(bool _isEquip)
     {
-        pick.SetActive(_isEquip);
+        currentWeapon.SetActive(_isEquip);
     }
     public void OnChangeHoldHandCuff(bool _isHold)
     {
         anim.SetBool("IsHoldHandCuff", _isHold);
-    }
-    public void OnInArea()
-    {
-
     }
 
     public void SetJoyStick(Joystick _joystick)
@@ -53,19 +54,94 @@ public class PlayerController : CreatureController
 
     public void OnMineralEnter(Mineral _mineral)
     {
-        bool IsMining = anim.GetBool("IsMining");
         mineral = _mineral;
+        switch (currentWeaponData.weaponState)
+        {
+            case Define.WeaponState.Pick:
+                bool IsMining = anim.GetBool("IsMining");
+                if (IsMining) return;
 
-        if (IsMining) return;
+                anim.SetBool("IsMining", true);
+                break;
+
+            case Define.WeaponState.Drill:
+
+                _mineral.Mining();
+                _mineral.zone.ReSpawnMineral(_mineral, _mineral.reSpawnTime);
+                _mineral.gameObject.SetActive(false);
+                break;
+
+            case Define.WeaponState.SitMachine:
 
 
-        anim.SetBool("IsMining", true);
+                _mineral.Mining();
+                _mineral.zone.ReSpawnMineral(_mineral, _mineral.reSpawnTime);
+                _mineral.gameObject.SetActive(false);
+                break;
+
+        }
+
+
+    }
+
+    public void OnEnterMineralZone()
+    {
+        switch (currentWeaponData.weaponState)
+        {
+            case Define.WeaponState.Pick:
+                EquipPick(true);
+                break;
+
+            case Define.WeaponState.Drill:
+                EquipPick(true);
+                anim.SetBool("IsDrilling", true);
+                break;
+            case Define.WeaponState.SitMachine:
+                EquipPick(true);
+                isBoardingMachine = true;
+                anim.SetState(State.SitMachine);
+                break;
+
+        }
+    }
+
+    public void OnExitMineralZone()
+    {
+        switch (currentWeaponData.weaponState)
+        {
+            case Define.WeaponState.Pick:
+                EquipPick(false);
+                break;
+
+            case Define.WeaponState.Drill:
+                EquipPick(false);
+                anim.SetBool("IsDrilling", false);
+                break;
+
+            case Define.WeaponState.SitMachine:
+                EquipPick(false);
+                isBoardingMachine = false;
+                break;
+        }
     }
 
     public void OnMineralExit(Mineral _mineral)
     {
         if (mineral != _mineral) return;
-        anim.SetBool("IsMining", false);
+
+        switch (currentWeaponData.weaponState)
+        {
+            case Define.WeaponState.Pick:
+                anim.SetBool("IsMining", false);
+                break;
+
+            case Define.WeaponState.Drill:
+                break;
+
+            case Define.WeaponState.SitMachine:
+                break;
+
+        }
     }
 
     public void OnMiningAnimEnd()
@@ -77,14 +153,18 @@ public class PlayerController : CreatureController
 
     public void OnUnLock(Define.UnLockType _type)
     {
-        switch(_type)
+        switch (_type)
         {
             case Define.UnLockType.Drill:
-                //드릴 활성화 + 애니메이션 전환
+                currentWeaponData = currentWeaponData.nextWeapon;
+                currentWeapon = drill;
+                //currentWeapon.gameObject.SetActive(true);
                 break;
 
             case Define.UnLockType.MiningMachine:
-                //기계 활성화 + 애니메이션 전환
+                currentWeaponData = currentWeaponData.nextWeapon;
+                currentWeapon = miningMachine;
+                //currentWeapon.gameObject.SetActive(true);
                 break;
 
         }
@@ -101,14 +181,18 @@ public class PlayerController : CreatureController
         {
             if (currentState != State.Idle)
             {
-                anim.SetState(Define.State.Idle);
-                currentState = State.Idle;
+                if (!isBoardingMachine)
+                {
+                    anim.SetState(Define.State.Idle);
+                    currentState = State.Idle;
+                }
+
             }
 
             return;
         }
 
-        State nextState = State.Run;
+        State nextState = isBoardingMachine ? State.SitMachine : State.Run;
 
         if (currentState != nextState)
         {

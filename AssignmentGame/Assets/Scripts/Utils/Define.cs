@@ -9,12 +9,11 @@ public static class Define
         Idle,
         Run,
         Mining,
-        DrillMining,
         SitMachine
     }
 
     public enum PrisonorState
-    { 
+    {
         Waiting,
         WaitingInLine,
         WaitingHandCuff,
@@ -28,7 +27,6 @@ public static class Define
         Pick,
         Drill,
         SitMachine,
-        MineWorker
 
     }
 

@@ -31,12 +31,19 @@ public class CameraController : BaseController
             .SetEase(Ease.InOutBack)
             .AsyncWaitForCompletion();
 
-        Vector3 originScale = _zone.transform.localScale;
-        _zone.transform.DOScale(originScale, _duration/2)
-            .From(Vector3.zero)
-            .SetEase(Ease.OutBack);
 
-        await UniTask.Delay(TimeSpan.FromSeconds(_duration / 2));
+
+        _zone.gameObject.SetActive(true);
+        Vector3 originScale = _zone.transform.localScale;
+        _zone.isReady = true;
+
+        await DOTween.Sequence()
+        .Append(_zone.transform.DOScale(originScale * 1.5f, 0.4f).SetEase(Ease.OutBack))
+        .Append(_zone.transform.DOScale(originScale, 0.3f).SetEase(Ease.InBack))
+        .AsyncWaitForCompletion();
+
+
+        await UniTask.Delay(TimeSpan.FromSeconds(_duration));
 
         await transform.DOMove(player.transform.position + Offset, 0.8f)
             .SetEase(Ease.InOutBack)

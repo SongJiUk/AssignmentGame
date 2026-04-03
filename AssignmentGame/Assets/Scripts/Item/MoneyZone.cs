@@ -10,7 +10,7 @@ public class MoneyZone : BaseController
 {
     [SerializeField] PurchaseZone drillzone;
 
-    public PurchaseZone DirllZone => drillzone;
+    public PurchaseZone DrillZone => drillzone;
     Stack<Transform> moneyStack = new();
     float baseY = 0.14f;
     float spacingY = 0.07f;
@@ -65,7 +65,7 @@ public class MoneyZone : BaseController
                         });
                 }
 
-                await UniTask.Delay(TimeSpan.FromSeconds(0.05f), cancellationToken : _token.Token);
+                await UniTask.Delay(TimeSpan.FromSeconds(0.05f), cancellationToken: _token.Token);
             }
         }
         catch (OperationCanceledException) { }
@@ -83,7 +83,7 @@ public class MoneyZone : BaseController
 
         Vector3 pos = transform.position
             + Vector3.up * (layer * spacingY + baseY)
-            + Vector3.right * (col * spacingX- centerX)
+            + Vector3.right * (col * spacingX - centerX)
             + Vector3.forward * (row * spacingZ - centerZ);
 
         _money.position = pos;

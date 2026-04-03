@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: MineWorkerZoneData
   m_EditorClassIdentifier: 
   cost: 50
-  targets: []
-  nextZone:
-  - {fileID: 11400000, guid: 828d7f85090b9e64695b85d18fdd00fd, type: 2}
+  type: 2
+  unLockType: 0
+  npcSpawnCount: 0

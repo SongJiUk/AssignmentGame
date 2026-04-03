@@ -1,19 +1,22 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using System;
 using System.Threading;
 
-//2°¡Áö °ü¸®ÇÔ, Prisonor, HandCuff
+//2ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½, Prisonor, HandCuff
 public class PrisonerZone : BaseController
 {
     [SerializeField] Transform handCuffPos;
     [SerializeField] Transform[] prisonerUntilHandCuffPos;
     [SerializeField] Transform[] roomWayPoint;
-    [SerializeField] PrisonRoom prisonRoom;
-    [SerializeField] MoneyZone moneyZone;
+    PrisonRoom prisonRoom;
+    MoneyZone moneyZone;
+
+    [SerializeField] Image zoneImage;
 
     public PrisonRoom PrisonRoom => prisonRoom;
     public MoneyZone MoneyZone => moneyZone;
@@ -36,18 +39,19 @@ public class PrisonerZone : BaseController
         if (!base.Init()) return false;
         if (prisonRoom == null) prisonRoom = GetComponentInChildren<PrisonRoom>();
         if (moneyZone == null) moneyZone = GetComponentInChildren<MoneyZone>();
-        AsyncPrisonorInit().Forget();
+        AsyncPrisonerInit().Forget();
 
         return true;
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.gameObject.layer == LayerMask.NameToLayer("Player"))
+        if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             workerCount++;
             cts?.Cancel();
             cts?.Dispose();
+            zoneImage.color = Color.green;
 
             cts = new CancellationTokenSource();
             StartCheck(Managers.GameM.player);
@@ -59,13 +63,14 @@ public class PrisonerZone : BaseController
     {
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
+            zoneImage.color = Color.white;
             workerCount--;
             cts?.Cancel();
             cts?.Dispose();
             cts = null;
         }
     }
-    #region HandCuff°ü·Ã
+    #region HandCuffï¿½ï¿½ï¿½ï¿½
     void AddToDesk(Transform _handCuff)
     {
         int number = handCuffStack.Count;
@@ -89,8 +94,8 @@ public class PrisonerZone : BaseController
     }
     #endregion
 
-    #region Prisonor°ü·Ã
-    async UniTaskVoid AsyncPrisonorInit()
+    #region Prisonerï¿½ï¿½ï¿½ï¿½
+    async UniTaskVoid AsyncPrisonerInit()
     {
         for (int i = prisonerUntilHandCuffPos.Length - 1; i >= 0; i--)
         {
@@ -116,7 +121,7 @@ public class PrisonerZone : BaseController
     }
 
 
-    public void OnPrisonorLeft()
+    public void OnPrisonerLeft()
     {
         prisonerQueue.Dequeue();
 
@@ -159,10 +164,10 @@ public class PrisonerZone : BaseController
     {
         try
         {
-            while(true)
+            while (true)
             {
                 PrisonerController prisoner = prisonerQueue.Count > 0 ? prisonerQueue.Peek() : null;
-                if(_player.FollowStackSystem.handCuffCount > 0)
+                if (_player.FollowStackSystem.handCuffCount > 0)
                 {
                     if (prisoner != null && prisoner.IsWaitingHandCuff && prisoner.NeedMoreHandCuff)
                     {
@@ -186,27 +191,27 @@ public class PrisonerZone : BaseController
                 {
                     TryGiveHandCuffFromDesk();
                 }
-                
+
                 await UniTask.Delay(TimeSpan.FromSeconds(0.05f), cancellationToken: _token.Token);
             }
-            
+
         }
         catch (OperationCanceledException) { }
     }
 
-   
+
     public void SendHandCuffToPrisoner(Transform _handCuff, PrisonerController _prisoner)
     {
         _prisoner.ReceiveHandCuff();
         _handCuff.DOJump(_prisoner.transform.position, 1f, 1, 0.1f)
             .OnComplete(() =>
             {
-                
+
                 Managers.ObjectM.DeSpawn<Transform>(_handCuff);
             });
     }
-  
-  
+
+
 
     public void TryGiveHandCuffFromDesk()
     {
@@ -225,7 +230,7 @@ public class PrisonerZone : BaseController
         isGiving = true;
         PrisonerController prisoner = prisonerQueue.Peek();
 
-        while(handCuffStack.Count > 0 && prisoner.IsWaitingHandCuff && prisoner.NeedMoreHandCuff)
+        while (handCuffStack.Count > 0 && prisoner.IsWaitingHandCuff && prisoner.NeedMoreHandCuff)
         {
             Transform handCuff = handCuffStack.Pop();
             prisoner.ReceiveHandCuff();
@@ -243,7 +248,7 @@ public class PrisonerZone : BaseController
 
     public void OnPrisonerArrviedToDesk(PrisonerController _prisoner)
     {
-        if(prisonerQueue.Peek() == _prisoner)
+        if (prisonerQueue.Peek() == _prisoner)
         {
             _prisoner.ChangeState(Define.PrisonorState.WaitingHandCuff);
         }

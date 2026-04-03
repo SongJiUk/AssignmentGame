@@ -25,7 +25,7 @@ public class MineralZone : BaseController
     {
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
-            Managers.GameM.player.EquipPick(true);
+            Managers.GameM.player.OnEnterMineralZone();
         }
     }
 
@@ -33,7 +33,7 @@ public class MineralZone : BaseController
     {
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
-            Managers.GameM.player.EquipPick(false);
+            Managers.GameM.player.OnExitMineralZone();
         }
     }
 

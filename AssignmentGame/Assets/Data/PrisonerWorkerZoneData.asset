@@ -13,3 +13,6 @@ MonoBehaviour:
   m_Name: PrisonerWorkerZoneData
   m_EditorClassIdentifier: 
   cost: 50
+  type: 2
+  unLockType: 0
+  npcSpawnCount: 0

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Cysharp.Threading.Tasks;
 using System.Threading;
 using System;
@@ -8,9 +9,13 @@ using DG.Tweening;
 
 public class MachineZone : BaseController
 {
+    const int MaxCount = 50;
+    [SerializeField] Image zoneImage;
+
     public event Action<Transform> OnMineralArrive;
     Stack<Transform> convertStack = new();
     public int MineralCount => convertStack.Count;
+    public bool IsFull => convertStack.Count >= MaxCount;
 
     private CancellationTokenSource cts;
     public int reserveSlotNum = 0;
@@ -22,14 +27,14 @@ public class MachineZone : BaseController
     void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.layer != LayerMask.NameToLayer("Player")) return;
-
+        zoneImage.color = Color.green;
         StartCheckZone(Managers.GameM.player);
     }
 
     void OnTriggerExit(Collider other)
     {
         if (other.gameObject.layer != LayerMask.NameToLayer("Player")) return;
-
+        zoneImage.color = Color.white;
         StopCheck();
     }
 
@@ -85,13 +90,25 @@ public class MachineZone : BaseController
     {
         try
         {
-            while (_player.FollowStackSystem.MineralCount > 0)
+            while (true)
             {
-                Transform mineral = _player.FollowStackSystem.RemoveMineral();
-                if (mineral != null)
+                if (IsFull)
                 {
-                    AddMineral(mineral);
+                    await UniTask.Delay(TimeSpan.FromSeconds(0.05f), cancellationToken: _token.Token);
+                    continue;
                 }
+
+                if (_player.FollowStackSystem.MineralCount > 0)
+                {
+                    Transform mineral = _player.FollowStackSystem.RemoveMineral();
+                    if (mineral != null)
+                    {
+                        AddMineral(mineral);
+                    }
+                }
+
+
+
 
                 await UniTask.Delay(TimeSpan.FromSeconds(0.05f), cancellationToken: _token.Token);
             }

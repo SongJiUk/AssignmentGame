@@ -759,6 +759,7 @@ MonoBehaviour:
   pick: {fileID: 116607112192415681}
   drill: {fileID: 7495100130320127055}
   miningMachine: {fileID: 1204526230819369365}
+  currentWeaponData: {fileID: 11400000, guid: 383008310f71e449e88918ae21197faa, type: 2}
 --- !u!114 &8638342306870221528
 MonoBehaviour:
   m_ObjectHideFlags: 0

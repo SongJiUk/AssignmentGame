@@ -44,6 +44,11 @@ public class MachineController : BaseController
 
         while (machineZone.MineralCount > 0)
         {
+            if (handCuffZone.IsFull)
+            {
+                await UniTask.WaitUntil(() => !handCuffZone.IsFull);
+            }
+
             Transform mineral = machineZone.RemoveMineral();
             await UniTask.Delay(TimeSpan.FromSeconds(convertDelay));
             Managers.ObjectM.DeSpawn<Transform>(mineral);

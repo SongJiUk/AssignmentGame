@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: DrillZoneData
   m_EditorClassIdentifier: 
   cost: 20
-  targets: []
-  nextZone:
-  - {fileID: 11400000, guid: 8a67bf5dbe871c54ca25b402bae866f5, type: 2}
-  - {fileID: 11400000, guid: 9d8ad71a7e6f6f34cb57363f12428103, type: 2}
+  type: 1
+  unLockType: 0
+  npcSpawnCount: 0

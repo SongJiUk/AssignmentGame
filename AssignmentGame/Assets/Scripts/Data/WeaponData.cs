@@ -5,10 +5,8 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "WeaponData", menuName = "Data/WeaponData")]
 public class WeaponData : ScriptableObject
 {
-    Define.WeaponState weaponState;
+    public Define.WeaponState weaponState;
     public int maxMineralCount;
-
-    public int upgradeCost;
     public WeaponData nextWeapon;
 
 }

@@ -6,7 +6,7 @@ using DG.Tweening;
 
 public class PrisonerController : BaseController
 {
-    // 0.81(ÁÖÈ²»ö -> ÁË¼ö´Â ÀÌ°É·Î ÅëÀÏ)
+    // 0.81(ï¿½ï¿½È²ï¿½ï¿½ -> ï¿½Ë¼ï¿½ï¿½ï¿½ ï¿½Ì°É·ï¿½ ï¿½ï¿½ï¿½ï¿½)
     [SerializeField] GameObject obj;
     [SerializeField] GameObject HandCuff;
 
@@ -26,7 +26,7 @@ public class PrisonerController : BaseController
 
     List<Transform> moneyList = new();
 
-    //TODO : °¨¿Á µé¾î°¡±â Àü¿£ isKinematic ÄÑÁÖ°í, µé¾î°¡¼­ µµÂøÇÏ¸é ²¨ÁÖ±â
+    //TODO : ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½î°¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ isKinematic ï¿½ï¿½ï¿½Ö°ï¿½, ï¿½ï¿½î°¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¸ï¿½ ï¿½ï¿½ï¿½Ö±ï¿½
     public void SetInfo(Vector3 _pos, Define.PrisonorState _arriveState, PrisonerZone _zone)
     {
         if (anim == null) anim = GetComponent<Animator>();
@@ -42,17 +42,17 @@ public class PrisonerController : BaseController
         IsWaitingHandCuff = false;
         ChangeState(Define.PrisonorState.Waiting);
     }
-    
+
 
     public void ChangeState(Define.PrisonorState _prisonorState)
     {
         prisonorState = _prisonorState;
-        switch(prisonorState)
+        switch (prisonorState)
         {
             case Define.PrisonorState.Waiting:
 
                 IsWaitingHandCuff = false;
-                anim.SetState(Define.State.Idle); 
+                anim.SetState(Define.State.Idle);
                 MoveAndArrive().Forget();
                 break;
             case Define.PrisonorState.WaitingInLine:
@@ -69,7 +69,7 @@ public class PrisonerController : BaseController
                 break;
 
             case Define.PrisonorState.WaitingRoom:
-                //TODO : ¹æ ´Ã¸®¸é ³Ñ¾î°¡°Ô?
+                //TODO : ï¿½ï¿½ ï¿½Ã¸ï¿½ï¿½ï¿½ ï¿½Ñ¾î°¡ï¿½ï¿½?
                 break;
 
             case Define.PrisonorState.InRoom:
@@ -85,7 +85,7 @@ public class PrisonerController : BaseController
     {
         await AsyncMoveToPosition(zone.RoomWayPoint[0].position);
 
-        if(zone.PrisonRoom.HasSpace)
+        if (zone.PrisonRoom.HasSpace)
         {
             zone.PrisonRoom.Enter();
             transform.LookAt(zone.RoomWayPoint[1]);
@@ -127,25 +127,25 @@ public class PrisonerController : BaseController
     public void ReceiveHandCuff()
     {
         currentHandCuffs++;
-        if(currentHandCuffs >= needHandCuffs)
+        if (currentHandCuffs >= needHandCuffs)
         {
             CreateMoney();
             anim.SetBool("IsHandCuff", true);
             HandCuff.SetActive(true);
-            zone.OnPrisonorLeft();
+            zone.OnPrisonerLeft();
             ChangeState(Define.PrisonorState.WalkingRoom);
         }
     }
 
     public void CreateMoney()
     {
-        for(int i = 0; i< needHandCuffs; i++)
+        for (int i = 0; i < needHandCuffs; i++)
         {
-            Transform money =  Managers.ObjectM.SpawnMoney(transform.position);
+            Transform money = Managers.ObjectM.SpawnMoney(transform.position);
             moneyList.Add(money);
         }
 
-        foreach(var money in moneyList)
+        foreach (var money in moneyList)
         {
             money.DOJump(zone.MoneyZone.transform.position, 1f, 1, 0.3f)
                 .OnComplete(() =>
@@ -157,5 +157,5 @@ public class PrisonerController : BaseController
         moneyList.Clear();
     }
 
- 
+
 }

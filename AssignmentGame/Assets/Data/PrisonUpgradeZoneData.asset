@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71c2eca76817adb45b9e7d309021fbc6, type: 3}
   m_Name: PrisonUpgradeZoneData
   m_EditorClassIdentifier: 
-  zoneName: MiningMachine
   cost: 50
-  preRequisite: {fileID: 11400000, guid: 72405dfc16eacf340a35b9241e98b78f, type: 2}
-  targets: []
+  type: 0
+  unLockType: 0
+  npcSpawnCount: 0

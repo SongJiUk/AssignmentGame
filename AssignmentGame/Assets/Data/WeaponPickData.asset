@@ -9,10 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 71c2eca76817adb45b9e7d309021fbc6, type: 3}
-  m_Name: MiningMachineZoneData
+  m_Script: {fileID: 11500000, guid: 0b86ae5bfe4054418be59bce063bea84, type: 3}
+  m_Name: WeaponPickData
   m_EditorClassIdentifier: 
-  cost: 50
-  type: 1
-  unLockType: 1
-  npcSpawnCount: 0
+  weaponState: 0
+  maxMineralCount: 10
+  nextWeapon: {fileID: 11400000, guid: 2b0376f32428a48709065bc93ccbda11, type: 2}

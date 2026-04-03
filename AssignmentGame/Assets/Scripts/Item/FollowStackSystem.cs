@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class FollowStackSystem : MonoBehaviour
 {
-   
+
     [SerializeField] Transform ItemRowPos_1;
     [SerializeField] Transform ItemRowPos_2;
     [SerializeField] Transform HandCuffPos;
@@ -27,7 +27,13 @@ public class FollowStackSystem : MonoBehaviour
 
     public void AddMineral()
     {
-        if(moneyStack.Count > 0)
+        if (Managers.GameM.player.CurrentWeaponData.maxMineralCount <= mineralStack.Count)
+        {
+            //TODO : UI MAX띄우기
+            return;
+        }
+
+        if (moneyStack.Count > 0)
         {
             int i = 0;
             foreach (var money in moneyStack)
@@ -56,10 +62,10 @@ public class FollowStackSystem : MonoBehaviour
             mineral.SetParent(null);
             mineral.localRotation = Quaternion.identity;
 
-            if(mineralStack.Count == 0 && moneyStack.Count > 0)
+            if (mineralStack.Count == 0 && moneyStack.Count > 0)
             {
                 int i = 0;
-                foreach(var money in moneyStack)
+                foreach (var money in moneyStack)
                 {
                     money.SetParent(ItemRowPos_1);
                     money.localPosition = Vector3.up * moneySpacing * i;
@@ -75,25 +81,35 @@ public class FollowStackSystem : MonoBehaviour
 
     public void AddMoney(Transform _money, MoneyZone _zone)
     {
+        Managers.GameM.Money += 5;
+        Managers.UIM.MoneyTextCheck();
         int number = moneyStack.Count;
-        
-        if(mineralStack.Count > 0) _money.SetParent(ItemRowPos_2);
+
+        if (mineralStack.Count > 0) _money.SetParent(ItemRowPos_2);
         else _money.SetParent(ItemRowPos_1);
 
         _money.localPosition = Vector3.up * moneySpacing * number;
         _money.localRotation = Quaternion.identity;
         moneyStack.Push(_money);
 
-        if(!hasReceivedFirstMoney)
-        { 
+        if (!hasReceivedFirstMoney)
+        {
             hasReceivedFirstMoney = true;
-            Managers.GameM.cam.PlayCutScene(_zone.DirllZone, 2f).Forget();
+            Managers.GameM.cam.PlayCutScene(_zone.DrillZone, 2f).Forget();
         }
     }
 
-    public void RemoveMoney()
+    public Transform RemoveMoney()
     {
+        if (moneyStack.Count > 0)
+        {
+            Transform money = moneyStack.Pop();
+            money.SetParent(null);
+            money.localRotation = Quaternion.identity;
 
+            return money;
+        }
+        return null;
     }
 
     public void AddHandCuff(Transform _handCuff)
@@ -127,6 +143,6 @@ public class FollowStackSystem : MonoBehaviour
             Managers.GameM.player.OnChangeHoldHandCuff(isHolding);
             wasHolding = isHolding;
         }
-     
+
     }
 }

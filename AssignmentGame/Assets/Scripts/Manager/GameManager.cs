@@ -2,10 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameManager 
+public class GameManager
 {
     public PlayerController player;
     public CameraController cam;
+    public int Money;
     public void Init()
     {
         player = Managers.ObjectM.SpawnPlayer(Vector3.zero);
