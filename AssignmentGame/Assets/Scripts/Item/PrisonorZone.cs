@@ -123,7 +123,7 @@ public class PrisonerZone : BaseController
 
     public void OnPrisonerLeft()
     {
-        prisonerQueue.Dequeue();
+        if (prisonerQueue.Count > 0) prisonerQueue.Dequeue();
 
         var prisoners = new List<PrisonerController>(prisonerQueue);
         int i = prisonerUntilHandCuffPos.Length - 1;
@@ -221,29 +221,36 @@ public class PrisonerZone : BaseController
         if (handCuffStack.Count == 0) return;
         if (isGiving) return;
 
-        AsyncGiveFromDesk().Forget();
+        AsyncGiveFromDesk(cts).Forget();
 
     }
 
-    async UniTaskVoid AsyncGiveFromDesk()
+    async UniTaskVoid AsyncGiveFromDesk(CancellationTokenSource _token)
     {
-        isGiving = true;
-        PrisonerController prisoner = prisonerQueue.Peek();
-
-        while (handCuffStack.Count > 0 && prisoner.IsWaitingHandCuff && prisoner.NeedMoreHandCuff)
+        try
         {
-            Transform handCuff = handCuffStack.Pop();
-            prisoner.ReceiveHandCuff();
-            handCuff.DOJump(prisoner.transform.position, 1f, 1, 0.1f)
-                .OnComplete(() =>
-                {
-                    Managers.ObjectM.DeSpawn<Transform>(handCuff);
-                });
+            isGiving = true;
+            PrisonerController prisoner = prisonerQueue.Peek();
 
-            await UniTask.Delay(TimeSpan.FromSeconds(0.05f));
+            while (handCuffStack.Count > 0 && prisoner.IsWaitingHandCuff && prisoner.NeedMoreHandCuff)
+            {
+                Transform handCuff = handCuffStack.Pop();
+                prisoner.ReceiveHandCuff();
+                handCuff.DOJump(prisoner.transform.position, 1f, 1, 0.1f)
+                    .OnComplete(() =>
+                    {
+                        Managers.ObjectM.DeSpawn<Transform>(handCuff);
+                    });
+
+                await UniTask.Delay(TimeSpan.FromSeconds(0.05f), cancellationToken: _token.Token);
+            }
+
+            isGiving = false;
         }
+        catch (OperationCanceledException) { isGiving = false; }
 
-        isGiving = false;
+
+
     }
 
     public void OnPrisonerArrviedToDesk(PrisonerController _prisoner)

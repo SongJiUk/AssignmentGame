@@ -31,6 +31,7 @@ public class MoneyZone : BaseController
 
     private void OnTriggerExit(Collider other)
     {
+        if (other.gameObject.layer != LayerMask.NameToLayer("Player")) return;
         StopCheck();
     }
 

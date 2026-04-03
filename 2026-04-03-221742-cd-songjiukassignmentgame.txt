@@ -1,0 +1,733 @@
+╭─── Claude Code v2.1.77 ──────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting        │
+│                Welcome back 송지욱!                │ started                 │
+│                                                    │ Run /init to create a … │
+│                      ▗ ▗   ▖ ▖                     │ Note: You have launche… │
+│                                                    │ ─────────────────────── │
+│                        ▘▘ ▝▝                       │ Recent activity         │
+│  Sonnet 4.6 · Claude Pro · wldnr1014@gmail.com's   │ No recent activity      │
+│  Organization                                      │                         │
+│                  /Users/songjiuk                   │                         │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+❯ cd Songjiuk/AssignmentGame                                                    
+
+⏺ Bash(cd /Users/songjiuk/Songjiuk/AssignmentGame && pwd)
+  ⎿  Error: Exit code 1
+     (eval):cd:1: no such file or directory: 
+     /Users/songjiuk/Songjiuk/AssignmentGame
+
+⏺ Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+⏺ AssignmentGame is at /Users/songjiuk/AssignmentGame, not inside a Songjiuk
+  subfolder. The correct path is:
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ /Users/songjiuk/AssignmentGame 디렉토리로 이동했습니다. 내부에 AssignmentGame
+  폴더와 CLAUDE.md, README.md가 있네요. 무엇을 도와드릴까요?
+
+✻ Crunched for 39s
+
+❯ 인스펙터에 끌어넣어서 참조해서 애니메이션을 넣어주고있는데,                   
+CameraController에 PlayCutScnen함수에서, 해당 _zone을 0에서 1.5정도로 커졌다가  
+다시 originScale로 바꾸고싶은데 인수들에 무슨 수를 넣어야 커졌다 작아지는       
+효과를 줄 수 있어?                                                              
+
+⏺ Searched for 2 patterns, read 2 files (ctrl+o to expand)
+
+⏺ 코드를 확인했어요. 현재 PlayCutScene 안의 DOScale 부분을 보면:
+
+  _zone.transform.DOScale(originScale, 1f)
+      .From(Vector3.zero)
+      .SetEase(Ease.OutBack);
+
+  지금 Ease.OutBack이 이미 "살짝 커졌다가 줄어드는" 효과를 주긴 하는데, 정확히
+  1.5배까지 커졌다가 originScale로 돌아오는 건 다른 접근이 필요해요.
+
+  ---
+  힌트
+
+  DOTween에서 중간 값을 거쳐가는 애니메이션은 DOTween.Sequence()를 써요.
+
+  Sequence는 두 개의 트윈을 순서대로 이어붙이는 방식이에요:
+
+  1단계: 0 → originScale * 1.5f  (빠르게 커짐)
+  2단계: originScale * 1.5f → originScale  (살짝 줄어듦)
+
+  구조 힌트
+
+  DOTween.Sequence()
+      .Append( /* 0 → 1.5배 트윈 */ )
+      .Append( /* 1.5배 → originScale 트윈 */ );
+
+  - Append의 첫 번째 인자: _zone.transform.DOScale(목표스케일, 시간)
+  - 첫 번째 트윈의 목표 스케일 → originScale * 1.5f
+  - 두 번째 트윈의 목표 스케일 → originScale
+  - 시작을 0으로 만들려면 첫 번째 트윈에 .From(Vector3.zero) 추가
+
+  ---
+  한 번 직접 Sequence 코드를 작성해보고, 막히면 가져와봐요!
+
+✻ Cogitated for 42s
+
+❯ 일단 만들었어, 작동도 잘 하고, 문제가 생길만한 코드가 있나 확인 한번만        
+해줄래? 그리고, 이제 해당 zone에 들어가면 remainCost가 0 이되면, nextZone활성화 
+ 하고, 데이터 타입에 맞게 활성화 해주면 되는거지? 이것도 DoJump애니메이션       
+사용할거긴한데, 숫자가 1씩 빠졌으면 좋겠어,                                     
+
+⏺ Searched for 1 pattern, read 4 files (ctrl+o to expand)
+
+⏺ CameraController 코드 리뷰
+
+  잘 만들었어요. 구조도 깔끔하고 Sequence 사용도 맞아요.
+
+  단 1가지 잠재적 문제가 있어요:
+
+  // ← 지금: SetActive(true) 이후에 originScale을 읽음
+  _zone.gameObject.SetActive(true);
+  Vector3 originScale = _zone.transform.localScale;
+
+  만약 이 오브젝트가 이전에 DOScale 트윈 도중에 비활성화됐다면, localScale이
+  예상치 못한 중간 값일 수 있어요. SetActive 전에 미리 읽어두는 게 더 안전해요.
+
+  // 권장 순서
+  Vector3 originScale = _zone.transform.localScale; // 먼저 읽고
+  _zone.gameObject.SetActive(true);                  // 그 다음 활성화
+
+  ---
+  PurchaseZone 로직 힌트
+
+  맞아요, 흐름은:
+
+  Zone 안에 있는 동안 → remainCost 1씩 감소 → 0이 되면 OnPurchaseComplete()
+
+  생각해볼 것들:
+
+  1. 어떻게 "지속적으로" 깎을까?
+  - OnTriggerEnter/Exit는 한 번만 호출됨 → 지속 감소엔 OnTriggerStay나 UniTask
+  루프가 필요해
+  - 근데 매 프레임 1씩 깎으면 너무 빨라 → 시간 간격을 어떻게 줄 건지 생각해봐
+
+  2. DoJump 애니메이션 타이밍
+  - 1이 깎일 때마다 → 스택에서 아이템 하나가 zone으로 DoJump
+  - 즉 감소 1회 = 아이템 1개 점프 = 텍스트 1 감소
+
+  3. UI 갱신
+  - costText, costFill 둘 다 업데이트 필요
+  - costFill.fillAmount는 (float)remainCost / data.cost로 계산
+
+  ---
+  지속 감소 로직을 OnTriggerStay로 할지, UniTask 루프로 할지 먼저 정해봐요.
+  어떻게 구현하려고 생각하고 있어?
+
+✻ Sautéed for 50s
+
+❯ UniTask로 한번 짜볼게                                                         
+
+⏺ 좋아요! 구조 힌트만 하나 드릴게요.
+
+  UniTask로 짤 때 핵심 흐름은:
+
+  OnTriggerEnter → 루프 시작
+      └─ while (remainCost > 0 && 플레이어가 존 안에 있는 동안)
+             └─ 일정 시간 대기 → remainCost-- → UI 갱신
+  OnTriggerExit → 루프 중단 조건 변경
+
+  중단 조건을 어떻게 관리할지가 핵심이에요.
+  bool isPlayerInZone 같은 플래그를 쓰거나, CancellationToken을 쓰는 방법 두
+  가지가 있어요.
+
+  일단 짜보고 가져와봐요!
+
+❯ Money를 얼마 가지고 있는지 Player가 알고있는게 나을까? 아니면 GameManager에서 
+ 관리하는게 나을까?                                                             
+
+⏺ GameManager(또는 별도 CurrencyManager)에서 관리하는 게 나아요.
+
+  이유:
+
+  - Money는 전역 자원이에요. 플레이어만 쓰는 게 아니라 PurchaseZone, UI,
+  업그레이드 등 여러 시스템이 읽고 써야 해요
+  - 만약 Player가 들고 있으면 → PurchaseZone이 player.money에 직접 접근해야 함 →
+   시스템 간 결합도가 높아짐
+  - Manager에 있으면 → 어디서든 Managers.GameM.Money (또는
+  Managers.CurrencyM.Money)로 접근 가능
+
+  CLAUDE.md 보면 이미 CurrencyManager 계획이 있던데, 거기서 관리하는 게 설계
+  의도와도 맞아요.
+
+❯ 일단 드릴을 20원 주고 사면 다음 zone이 열리도록 수정은 했어, 이건 UI 완성되면 
+ 추가로 물어볼게, 지금 해야될게 Player가 쓰는 무기들 있잖아, 곡괭이, 드릴,      
+머신이 있는데, 곡괭이는 애니메이션이 끝날때쯤 하나 캐는거고 드릴은 그냥         
+앞에있는거 한번에 캐고 이런느낌인데 3개다 Max치가 있단말야? 곡괭이는 10이고,    
+드릴은 20, 머신은 30 이렇게 잡으려고 하는데 이것도 데이터를 나눠줘야하잖아      
+어떤식으로 해야할까/                                                            
+
+⏺ Read 2 files (ctrl+o to expand)
+
+⏺ WeaponData.cs 이미 있고 구조도 꽤 잘 잡혀있어요.
+
+  특히 nextWeapon 필드가 좋은 패턴이에요:
+
+  Pick SO → nextWeapon: Drill SO → nextWeapon: Machine SO
+
+  언락할 때 currentWeapon = currentWeapon.nextWeapon 한 줄로 해결돼요.
+
+  ---
+  지금 WeaponData에서 빠진 것
+
+  maxMineralCount는 있는데, 채굴 방식의 차이를 어떻게 표현할지가 관건이에요.
+
+  무기마다 다른 점:
+  - 곡괭이: 애니메이션 1회 끝 → 1개 채굴
+  - 드릴: 진입 즉시 → 범위 내 전부 채굴
+  - 머신: (다른 방식)
+
+  이걸 데이터로 표현하는 방법 두 가지가 있어요:
+
+  방법 A) enum으로 행동 타입 구분
+  WeaponData에 WeaponState 타입 필드 추가
+  → PlayerController에서 switch로 분기
+
+  방법 B) 채굴량/간격만 데이터로, 행동은 코드로
+  miningAmount (1회당 몇 개 캐는지)
+  miningInterval (얼마나 자주 캐는지)
+  → 방식 차이는 PlayerController 로직으로 처리
+
+  WeaponState enum이 이미 Define에 있으니 방법 A가 자연스러워 보이는데, 어떻게
+  생각해요?
+
+❯ A가 나을거같아, 미네랄도 어차피 5초마다 한번씩 리젠되기도 하고,               
+
+⏺ 그럼 WeaponData에 뭘 추가하면 되는지 정리해줄게요.
+
+  WeaponData 수정 포인트
+
+  지금 코드 보면 weaponState가 private이에요 (public 빠짐). 이것부터 고쳐야
+  해요.
+
+  추가로 필요한 필드:
+
+  weaponState   → WeaponState enum (어떤 무기인지)
+  miningAmount  → int (1회 채굴량, 곡괭이=1, 드릴=범위내전부)
+
+  PlayerController에서 사용하는 흐름
+
+  현재 장착 무기: WeaponData currentWeapon
+
+  채굴 시 → currentWeapon.weaponState switch
+      Pick      → 애니메이션 끝에 Mining() 1번
+      Drill     → 진입 즉시 범위 내 전부 Mining()
+      SitMachine → ...
+
+  언락 시
+
+  OnUnLock() 호출
+      → currentWeapon = currentWeapon.nextWeapon
+      → 무기 오브젝트 교체 (pick/drill/machine SetActive)
+
+  ---
+  WeaponData 수정하고 PlayerController에 currentWeapon 필드 추가하는 것부터
+  해보세요. 어떻게 됐는지 가져와봐요!
+
+❯ 드릴까지 변경을 했는데. 왜 미네랄이 안캐지는지 한번 봐줄 수 있어?             
+
+⏺ Read 4 files (ctrl+o to expand)
+
+⏺ 발견했어요. 오타 하나 있어요.
+
+  PlayerController.cs 67~70번 줄:
+
+  bool IsDirlling = anim.GetBool("IsDrilling");   // ← "IsDrilling" (l 하나)
+  if (IsDirlling) return;
+
+  anim.SetBool("IsDirlling", true);               // ← "IsDirlling" (l 두 개) 
+  오타!
+
+  Get과 Set이 서로 다른 파라미터명을 보고 있어요. 드릴 Animator 상태 전환이
+  제대로 안 되는 원인이에요.
+
+  ---
+  그리고 두 번째로 확인해야 할 게 있어요. FollowStackSystem.AddMineral() 31번
+  줄:
+
+  if (Managers.GameM.player.CurrentWeaponData.maxMineralCount <=
+  mineralStack.Count)
+      return;
+
+  인스펙터에서 Drill WeaponData의 maxMineralCount가 0으로 설정되어 있으면 0 <= 0
+   조건이 맞아서 채굴이 즉시 return돼요.
+
+  오타 고치고, Drill WeaponData SO에서 maxMineralCount 값 확인해봐요!
+
+✻ Cogitated for 2m 8s
+
+❯ 이거 OnPurchaseComplete이게 연속으로 들어와서 바로 machine으로                
+넘어가버리는데, 이거 너무 OnComplete되기전에 두개 보내버려서 그런건가?          
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ 맞아요, 정확히 그 이유예요.
+
+  타이밍을 보면:
+
+  0.00초: remainCost-- (1→0), money1 DOJump 시작 (0.1초 소요)
+  0.05초: 루프 재실행 → remainCost가 이미 0 → while 조건 통과 안 함  ← OK
+
+  근데 remainCost가 2 이상이면?
+  0.00초: remainCost-- (2→1), money1 DOJump 시작
+  0.05초: remainCost-- (1→0), money2 DOJump 시작
+  0.10초: money1 OnComplete → remainCost == 0 → OnPurchaseComplete() 호출!
+  0.15초: money2 OnComplete → remainCost == 0 → OnPurchaseComplete() 또 호출!
+
+  remainCost--는 0.05초마다 즉시 실행되는데, OnPurchaseComplete 체크는 DOJump 
+  완료 후(0.1초) 에 실행돼서 여러 개가 겹쳐요.
+
+  ---
+  힌트: 가장 간단한 해결은 이미 완료됐는지 체크하는 플래그 하나 추가하는 거예요.
+
+  bool isCompleted = false;
+
+  // OnComplete 안에서
+  if (remainCost == 0 && !isCompleted)
+  {
+      isCompleted = true;
+      OnPurchaseComplete();
+  }
+
+  직접 고쳐봐요!
+
+❯ 고쳤어, 이거 드릴이나, 머신같은경우에는 곡괭이처럼 mineral하나하나            
+때리는게아니라 Drill하고 겹치는 모든걸 캐야되는데 어떻게 수정해야할까?          
+
+⏺ 현재 구조를 보면 문제가 명확해요.
+
+  OnMineralEnter Drill 케이스:
+  bool IsDirlling = anim.GetBool("IsDrilling");
+  if (IsDirlling) return;  // ← 두 번째 미네랄부터 전부 막힘
+
+  각 Mineral은 자기 콜라이더가 있어서 플레이어와 겹칠 때 각각 OnMineralEnter를
+  호출해요. 즉 구조 자체는 맞는데, IsDrilling이면 return 때문에 첫 번째만 캐지는
+   거예요.
+
+  ---
+  접근 방법
+
+  드릴과 애니메이션을 분리해서 생각해야 해요.
+
+  - 애니메이션 → 드릴 시작할 때 한 번만 set (중복 방지 필요)
+  - 채굴 → 미네랄마다 독립적으로 처리 (중복 방지 불필요)
+
+  OnMineralEnter 호출 (미네랄 A)
+      → 애니메이션 set (IsDrilling 아닐 때만)
+      → Mining() 실행 ← 분리
+
+  OnMineralEnter 호출 (미네랄 B)
+      → 애니메이션 set 스킵 (이미 IsDrilling)
+      → Mining() 실행 ← 똑같이 실행
+
+  즉 if (IsDrilling) return 을 전체 return이 아니라 애니메이션 set 부분만 
+  감싸도록 수정하면 돼요.
+
+  직접 수정해봐요!
+
+✻ Baked for 32s
+
+❯ 수정했는데 확인해주라, 그리고 돌, 수갑도 Max값이 있어, 대충 한 50으로         
+설정한다고 치면, 어떤 조건을 또 추가해야해?                                     
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ 코드 리뷰 먼저
+
+  drillOverlapCount 사용 방식에 문제가 있어요.
+
+  case Define.WeaponState.Drill:
+      drillOverlapCount++;        // +1
+      if (drillOverlapCount == 1)
+          anim.SetBool("IsDrilling", true);
+
+      _mineral.Mining();
+      _mineral.zone.ReSpawnMineral(...);
+      drillOverlapCount--;        // 바로 -1 → 항상 0 유지
+      _mineral.gameObject.SetActive(false);
+
+  ++하고 바로 --해서 항상 0이에요. 매 미네랄마다 drillOverlapCount == 1이 true가
+   되니 애니메이션을 계속 재세팅해요.
+
+  드릴은 이미 OnEnterMineralZone / OnExitMineralZone에서 애니메이션을 관리하고
+  있으니, OnMineralEnter 안의 drillOverlapCount 관련 코드는 제거해도 돼요.
+
+  ---
+  수갑 Max 조건
+
+  지금 AddMineral()에는 이미 체크가 있어요:
+  if (CurrentWeaponData.maxMineralCount <= mineralStack.Count) return;
+
+  수갑도 같은 방식으로 AddHandCuff() 안에 추가하면 돼요.
+
+  근데 Max 50 값을 어디에 둘지 먼저 정해야 해요:
+
+  - const int MAX_HANDCUFF = 50 → FollowStackSystem에 상수로 (간단하지만 수정
+  불편)
+  - ScriptableObject → 나중에 업그레이드로 늘릴 가능성 있으면 적합
+
+  수갑 Max를 업그레이드로 늘릴 계획 있어요?
+
+✻ Cogitated for 41s
+
+❯ Player에 max값은 이미 완성했고, 내가 말한건 MachineController에서 max값       
+말한거야.                                                                       
+
+⏺ Read 3 files (ctrl+o to expand)
+
+⏺ 코드 흐름상 체크가 필요한 위치가 두 군데예요.
+
+  1. MachineZone - 돌 Max (convertStack)
+
+  AsyncCheckZone에서 미네랄을 기계에 넣을 때 체크 필요:
+  convertStack.Count >= 50이면 → AddMineral 하지 않고 대기
+
+  2. MachineController - 수갑 Max (HandCuffZone)
+
+  AsyncConvert 루프에서 수갑을 생성할 때 체크 필요:
+  handCuffZone이 꽉 찼으면 → 변환 멈추고 대기
+
+  근데 지금 HandCuffZone에 Count를 외부에서 읽을 수 있는 프로퍼티가 없어요.
+
+  // HandCuffZone에 이게 필요해요
+  public int HandCuffCount => handCuffStack.Count;
+
+  이 프로퍼티 추가하고, 위 두 조건 각각 추가해봐요!
+
+✻ Worked for 40s
+
+❯ 확인 해볼래?                                                                  
+
+⏺ Read 3 files (ctrl+o to expand)
+
+⏺ 전반적으로 잘 짰어요. IsFull 프로퍼티로 분리한 것도 깔끔하고, WaitUntil로
+  대기하는 것도 좋아요.
+
+  한 가지 빈 곳이 있어요.
+
+  HandCuffZone.AddHandCuff()에 Max 체크가 없어요:
+
+  public void AddHandCuff()
+  {
+      // IsFull 체크 없음!
+      int number = handCuffStack.Count;
+      var handcuff = Managers.ObjectM.SpawnHandCuff(pos);
+      handCuffStack.Push(handcuff);
+  }
+
+  지금은 MachineController에서 IsFull 확인 후 호출하니까 현재는 문제없지만,
+  나중에 다른 곳에서 AddHandCuff()를 호출할 경우 50개를 초과할 수 있어요.
+
+  방어적으로 AddHandCuff() 안에도 체크 추가해두는 게 안전해요.
+
+❯ 일단 수정했고, 게임의 돈 단위를 money프리팹 하나에 10원으로 만들고싶은데,     
+10씩 빼버리면 UI Text, Image가 한번에 확 줄거아냐 이거 1개 빼는거처럼 줄이는    
+방법없어?                                                                       
+
+⏺ 실제 값(money)과 UI에 표시되는 값을 분리하면 돼요.
+
+  실제로는 10씩 빠지지만, UI는 DOTween으로 애니메이션하는 방식이에요.
+
+  DOTween에 딱 맞는 메서드가 있어요:
+
+  DOTween.To(
+      () => 현재표시값,
+      x => 현재표시값 = x,
+      목표값,
+      duration
+  );
+
+  예를 들어 money가 100 → 90으로 바뀔 때:
+  실제 Money: 즉시 90
+  UI 표시: DOTween으로 100 → 90 (0.5초에 걸쳐 1씩 줄어드는 것처럼)
+
+  핵심은 두 가지를 분리하는 것:
+  - Managers.GameM.Money → 실제 값 (즉시 변경)
+  - displayMoney → UI용 float 값 (DOTween으로 애니메이션)
+
+  displayMoney를 int로 캐스팅해서 Text에 표시하면 자연스럽게 1씩 줄어드는 것처럼
+   보여요.
+
+  어디서 이 UI를 관리할 예정이에요? HUD 쪽에서 할 건지, CurrencyManager 쪽인지에
+   따라 구현 위치가 달라질 것 같아서요.
+
+❯ PurchaseZone에서 UI를 사용하거든, 확인해볼래?                                 
+
+⏺ Read 1 file (ctrl+o to expand)
+
+⏺ 현재 코드를 보면 costText는 remainCost를 표시하고, remainCost는 이미 1씩
+  줄어들고 있어요.
+
+  사용자가 말하는 "10씩 확 줄어드는" 부분은 Managers.GameM.Money -= 10 관련 HUD
+  잔액 UI인 거죠?
+
+  remainCost와 Money 중 어느 쪽 UI가 10씩 튀는 문제인지 먼저 확인하고 싶어서요.
+  혹시 costText가 remainCost 기준이 아니라 Money 기준으로 표시하도록 되어 있는
+  건가요?
+
+✻ Baked for 37s
+
+❯ +=10씩 해버리니까 UI는 보지도 못하고 끝나버려                                 
+
+⏺ 아, Money += 10 하는 순간 HUD 숫자가 바로 10 올라가서 중간 과정을 못 보는
+  거죠.
+
+  실제 값과 표시 값을 분리하면 돼요.
+
+  접근 방법:
+
+  실제 Money: 즉시 += 10
+  표시용 displayMoney: DOTween으로 이전값 → 새값 (0~0.3초 동안 1씩)
+
+  HUD에서 이렇게 구조를 잡으면 돼요:
+
+  float displayMoney; // UI 표시용
+
+  void UpdateMoneyUI(int newValue)
+  {
+      DOTween.To(
+          () => displayMoney,
+          x => { displayMoney = x; moneyText.text = ((int)x).ToString(); },
+          newValue,
+          0.3f  // 지속 시간
+      );
+  }
+
+  Money가 바뀔 때마다 UpdateMoneyUI를 호출하면 돼요.
+
+  근데 지금 HUD 스크립트가 있어요? Money 변경을 어떻게 감지할지에 따라 구현
+  위치가 달라져요. (매 프레임 폴링 vs Action 이벤트)
+
+❯ 내가 잘못확인했어 한개당 5원으로 할거야                                       
+
+⏺ 그럼 바꿔야 할 곳 두 군데예요.
+
+  1. PurchaseZone.cs - Managers.GameM.Money -= 10 → Managers.GameM.Money -= 5
+  2. Money가 추가되는 곳 (FollowStackSystem이나 MoneyZone) - += 10 → += 5
+
+  확인해서 바꿔봐요!
+
+❯ 바꿨는데, 이것도 찬다는 느낌으로 1단위로 움직였으면 좋겠는데 0.1초마다        
+보내는거 너무 짧은가?                                                           
+
+⏺ 0.05초면 1초에 20개가 날아가는 거라 좀 빠르긴 해요.
+
+  costFill이 꽉 차는 느낌을 주려면 총 비용과 간격의 곱으로 생각하면 돼요:
+
+  baseCost 20개짜리 존 기준
+  0.05초 → 다 채우는데 1초   (너무 빠름)
+  0.1초  → 다 채우는데 2초   (적당)
+  0.15초 → 다 채우는데 3초   (느린 편)
+
+  보통 이런 류 게임에서 0.1~0.12초가 적당한 "통통 튀는 느낌"이 나요.
+
+  근데 비용이 큰 존(나중에 업그레이드용)은 오래 걸리면 지루할 수 있으니, 나중에
+  비용에 따라 간격을 동적으로 조절하는 것도 고려해볼 만해요:
+
+  float interval = Mathf.Clamp(2f / baseCost, 0.05f, 0.15f);
+
+  일단 0.1초로 테스트해보고 느낌 봐요!
+
+❯ 지금 수정을 하긴했는데, 5원씩 올라야되는데 43원 34원 막 이렇게 떨어지거든?    
+근데 이거 동시에 Dotween이 돌아가서 그런거같은데, 어떤방식으로 수정해야할까?    
+
+⏺ 맞아요, 동시에 여러 DOTween.To가 실행되면서 서로 displayMoney를 건드려서 값이
+  뒤죽박죽이 되는 거예요.
+
+  예를 들면:
+  트윈A: 50 → 45 진행 중 (48쯤 표시)
+  트윈B: 45 → 40 시작     (45부터 덮어씀)
+  → 48, 45, 43, 47... 뒤섞임
+
+  해결 방법은 새 트윈 시작 전에 이전 트윈을 Kill 하는 거예요.
+
+  Tween moneyTween; // 트윈 참조 저장
+
+  void UpdateMoneyUI(int newValue)
+  {
+      moneyTween?.Kill();  // 진행 중인 트윈 중단
+      moneyTween = DOTween.To(/* 현재 displayMoney → newValue */);
+  }
+
+  Kill() 후 새 트윈은 현재 displayMoney 위치에서 시작하기 때문에 자연스럽게
+  이어져요.
+
+  직접 적용해봐요!
+
+❯ 바꿔봤는데, 이렇게 해도 너무 빨라서 숫자가 묻히는거같은데 맞아?               
+
+⏺ 맞아요. 0.1초마다 새 돈이 나가면서 트윈을 계속 Kill → 재시작하니까
+  애니메이션이 완주를 못하고 묻히는 거예요.
+
+  DOTween 방식 자체가 이 패턴에 안 맞아요.
+
+  ---
+  더 잘 맞는 방법은 Mathf.MoveTowards로 추적하는 방식이에요:
+
+  실제 Money: 즉시 변경 (50 → 45 → 40...)
+  displayMoney: 매 프레임 실제값을 향해 일정 속도로 따라감
+
+  // Update에서
+  displayMoney = Mathf.MoveTowards(displayMoney, Managers.GameM.Money, speed *
+  Time.deltaTime);
+  moneyText.text = ((int)displayMoney).ToString();
+
+  speed를 조절하면 빠르게/느리게 따라가는 정도를 튜닝할 수 있어요.
+
+  장점은 트윈 충돌이 없고, 돈이 연속으로 빠져도 displayMoney가 자연스럽게
+  쫓아가요. 직접 해봐요!
+
+❯ Machine까지 만들고 테스트까지 다 완료했는데, 문제가 생길만한 코드 있는지      
+체크한번 해줘                                                                   
+
+⏺ Read 5 files (ctrl+o to expand)
+
+⏺ 발견한 문제들 정리할게요.
+
+  ---
+  1. PurchaseZone - Money 차감 후 롤백 누락 (버그)
+
+  remainCost -= 5;
+  Managers.GameM.Money -= 5;       // 먼저 차감
+  Transform money = _player.FollowStackSystem.RemoveMoney();
+  if (money == null) { remainCost += 5; break; }  // remainCost만 복구, Money는 
+  복구 안 됨!
+
+  RemoveMoney()가 null이면 remainCost는 복구되지만 Managers.GameM.Money는 이미 5
+   빠진 채로 남아요.
+
+  ---
+  2. PurchaseZone - int.Parse(costText.text) 위험
+
+  DOTween.To(() => int.Parse(costText.text), ...)
+
+  DOTween이 내부적으로 float을 다루기 때문에 중간에 "45.3" 같은 소수점 문자열이
+  생겨서 다음 Parse 호출 시 예외가 날 수 있어요. ((int)x).ToString() 으로 바꿔야
+   안전해요.
+
+  ---
+  3. MachineController - WaitUntil 취소 토큰 없음
+
+  await UniTask.WaitUntil(() => !handCuffZone.IsFull);  // CancellationToken 
+  없음
+
+  오브젝트가 파괴돼도 이 대기가 계속 살아있을 수 있어요.
+
+  ---
+  4. OnUnLock - 무기 활성화 주석 처리
+
+  currentWeapon = drill;
+  //currentWeapon.gameObject.SetActive(true);  // 주석 처리됨
+
+  드릴/머신 언락 후 무기가 활성화 안 되는데, 의도된 건지 확인 필요해요.
+  OnEnterMineralZone에서만 켜지는 구조면 괜찮지만, MineralZone 밖에 있을 때
+  언락되면 무기가 안 보여요.
+
+  ---
+  1번이 실제 돈 수치에 영향을 주는 버그라 제일 먼저 고치는 걸 추천해요!
+
+✻ Baked for 52s
+
+❯ Machine까지 만들고 테스트까지 다 완료했는데, 문제가 생길만한 코드 있는지      
+체크한번 해줘                                                                   
+
+⏺ 아까 리뷰한 내용이랑 같은 질문인데, 혹시 아직 못 본 파일들도 포함해서 더 넓게
+  봐줄까요?
+
+⏺ Read 4 files (ctrl+o to expand)
+
+⏺ 새로 발견한 문제들이 있어요.
+
+  ---
+  1. MoneyZone - OnTriggerExit Layer 체크 없음
+
+  private void OnTriggerExit(Collider other)
+  {
+      StopCheck();  // 아무 오브젝트가 나가도 호출됨!
+  }
+
+  미네랄이나 다른 오브젝트가 Zone을 스치기만 해도 StopCheck()가 실행돼요. Player
+   체크 추가 필요해요.
+
+  ---
+  2. PrisonerZone - AsyncGiveFromDesk CancellationToken 없음
+
+  await UniTask.Delay(TimeSpan.FromSeconds(0.05f));  // 취소 토큰 없음
+
+  Player가 Zone을 나가도 이 루프가 계속 수갑을 보내요.
+
+  ---
+  3. PrisonerZone - OnPrisonerLeft Dequeue 안전 체크 없음
+
+  public void OnPrisonerLeft()
+  {
+      prisonerQueue.Dequeue();  // 비어있으면 InvalidOperationException
+
+  Queue가 비어있을 때 호출되면 예외 발생해요.
+
+  if (prisonerQueue.Count > 0) prisonerQueue.Dequeue();
+
+  ---
+  이전 리뷰에서 나온 것들 포함해서 우선순위 정리:
+
+  ┌─────────┬────────────────────────────────┬───────────────────────────────┐
+  │ 심각도  │              위치              │             내용              │
+  ├─────────┼────────────────────────────────┼───────────────────────────────┤
+  │ 🔴 버그 │ PurchaseZone                   │ Money 차감 롤백 누락          │
+  ├─────────┼────────────────────────────────┼───────────────────────────────┤
+  │ 🔴 버그 │ PrisonerZone                   │ Dequeue 안전 체크 없음        │
+  ├─────────┼────────────────────────────────┼───────────────────────────────┤
+  │ 🟡 주의 │ MoneyZone                      │ OnTriggerExit layer 체크 없음 │
+  ├─────────┼────────────────────────────────┼───────────────────────────────┤
+  │ 🟡 주의 │ PurchaseZone                   │ int.Parse 예외 가능성         │
+  ├─────────┼────────────────────────────────┼───────────────────────────────┤
+  │ 🟡 주의 │ PrisonerZone/MachineController │ CancellationToken 누락        │
+  └─────────┴────────────────────────────────┴───────────────────────────────┘
+
+✻ Brewed for 40s
+
+❯ 고쳤는데 확인해줄래?                                                          
+
+⏺ Read 4 files (ctrl+o to expand)
+
+⏺ 수정된 것들 확인했어요.
+
+  ✅ 완료
+  - MoneyZone OnTriggerExit layer 체크
+  - PrisonerZone Dequeue 안전 체크
+  - PrisonerZone AsyncGiveFromDesk CancellationToken
+  - PurchaseZone Money 롤백
+
+  ---
+  아직 남은 것 2개
+
+  1. PrisonerZone - isGiving이 취소 시 false로 안 돌아옴
+
+  async UniTaskVoid AsyncGiveFromDesk(CancellationTokenSource _token)
+  {
+      try
+      {
+          isGiving = true;
+          // ... 루프
+          isGiving = false;  // 정상 종료 시만 실행됨
+      }
+      catch (OperationCanceledException) { }  // isGiving = false 없음!
+  }
+
+  취소되면 isGiving이 true인 채로 남아서 이후 TryGiveHandCuffFromDesk()가 영원히
+   막혀요.
+
+  catch (OperationCanceledException) { isGiving = false; }
+
+  2. PurchaseZone - int.Parse 아직 미수정
+
+  DOTween.To(() => int.Parse(costText.text), ...)  // 소수점 문자열 Parse 위험
+
+  이 두 개 수정해봐요!

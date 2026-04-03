@@ -79,7 +79,12 @@ public class PurchaseZone : BaseController
                         Managers.GameM.Money -= 5;
                         Managers.UIM.MoneyTextCheck();
                         Transform money = _player.FollowStackSystem.RemoveMoney();
-                        if (money == null) { remainCost += 5; break; }
+                        if (money == null)
+                        {
+                            remainCost += 5;
+                            Managers.GameM.Money += 5;
+                            break;
+                        }
                         money.DOJump(transform.position, 1f, 1, 0.1f)
                         .OnComplete(() =>
                         {
@@ -87,7 +92,7 @@ public class PurchaseZone : BaseController
 
                             float count = baseCost - remainCost;
                             if (costText != null)
-                                DOTween.To(() => int.Parse(costText.text), x => costText.text = x.ToString(), remainCost, 0.1f);
+                                DOTween.To(() => int.Parse(costText.text), x => costText.text = ((int)x).ToString(), remainCost, 0.1f);
                             if (costFill != null)
                                 costFill.DOFillAmount(count / baseCost, 0.1f);
 
