@@ -1,0 +1,1244 @@
+ ▐▛███▜▌   Claude Code v2.1.90
+▝▜█████▛▘  Sonnet 4.6 · Claude Pro
+  ▘▘ ▝▝    C:\Users\wldnr
+
+> cd songjiuk/Github/AssignmentGame                                             
+
+● Bash(cd C:/Users/wldnr/songjiuk/Github/AssignmentGame && pwd && ls)
+  ⎿  Error: Exit code 1
+     /usr/bin/bash: line 1: cd: C:/Users/wldnr/songjiuk/Github/AssignmentGame: 
+     No such file or directory
+
+  Searched for 1 pattern, listed 3 directories (ctrl+o to expand)
+
+● 경로가 ~/Github/AssignmentGame에 있습니다.
+
+  Listed 1 directory (ctrl+o to expand)
+
+● ~/Github/AssignmentGame에 있습니다. Unity 프로젝트네요. 무엇을 도와드릴까요?
+
+✻ Crunched for 45s
+
+> 이제 NPC를 설정해야하거든? NPC는 어떻게 설계하는게 좋을까?                    
+
+● 먼저 현재 프로젝트 구조를 파악하겠습니다.
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● CLAUDE.md 기반으로 설계 힌트 먼저 드릴게요.
+
+  ---
+  NPC 설계 접근 방법
+
+  1. 어떤 NPC가 필요한가?
+
+  CLAUDE.md 코어 루프에서 NPC는 두 종류입니다:
+
+  ┌──────────┬─────────────────────────────────────┬───────────┐
+  │   NPC    │                역할                 │ 이동 패턴 │
+  ├──────────┼─────────────────────────────────────┼───────────┤
+  │ 수감자   │ 입구 → 대기줄 → 수갑 받음 → 방 배정 │ 단방향    │
+  ├──────────┼─────────────────────────────────────┼───────────┤
+  │ 보조 NPC │ 수갑 보관소 ↔ 입구 반복 순환        │ 루프      │
+  └──────────┴─────────────────────────────────────┴───────────┘
+
+  PrisonerController.cs는 이미 수감자 NPC 역할을 하고 있어요. 지금 만들 NPC가
+  보조 NPC인가요, 아니면 다른 NPC인가요?
+
+  ---
+  2. 설계의 핵심 질문
+
+  "이동 로직"과 "행동 로직"을 분리해야 하나?
+
+  현재 PrisonerController는 이동(AsyncMoveToPosition) + 행동(ReceiveHandCuff
+  등)이 한 파일에 있습니다.
+
+  컴포넌트 분리 방식:
+  NPCMover.cs        → 어디로 갈지 (Waypoint 이동만 담당)
+  [NPC역할]Controller → 무엇을 할지 (행동 상태만 담당)
+
+  분리하면 좋은 이유: 보조 NPC든 수감자든 이동 로직은 같고, 행동만 다르기
+  때문이에요.
+
+  ---
+  3. 상태 머신 설계
+
+  보조 NPC를 예시로 들면:
+  Idle → Walking → Arrived → (아이템 전달) → Walking(반대방향) → ...
+
+  생각해볼 점:
+  - 상태를 enum으로 정의한다면 어떤 상태들이 필요할까요?
+  - PrisonorState 패턴을 그대로 따르는 게 좋을까요?
+
+  ---
+  4. Waypoint 구조
+
+  CLAUDE.md에서 이미 결정된 방식:
+  WaypointPath (GameObject)
+  ├── Point_00  ← 출발점
+  ├── Point_01  ← 중간 경유지
+  └── Point_02  ← 도착점
+
+  NPCMover.cs가 이 배열을 순서대로 따라가고, 루프 여부만 다르게 설정하는
+  방식이에요.
+
+  ---
+  먼저 답해주세요
+
+  1. 어떤 NPC를 먼저 만들려고 하나요? (보조 NPC / 수감자 보완 / 다른 것?)
+  2. 이동과 행동을 분리된 컴포넌트로 만들 생각인가요, 아니면 하나로?
+
+  방향이 잡히면 WaypointPath.cs부터 어떻게 짜면 될지 힌트 드릴게요.
+
+✻ Churned for 48s
+
+> 수감자는 다 만들어놨고 광부NPC, 수갑<=>PrisonZone 왔다갔다 할거야             
+
+● 기존 코드 좀 더 볼게요.
+
+  Read 2 files (ctrl+o to expand)
+
+● 기존 코드를 파악했습니다. 설계 힌트 드릴게요.
+
+  ---
+  두 NPC의 공통 패턴
+
+  코드를 보니 두 NPC 모두 A ↔ B 왕복 루프입니다:
+
+  광부 NPC:      MineralZone → 채굴 → MachineZone → 내려놓기 → 반복
+  수갑 운반 NPC: HandCuffZone → 줍기 → PrisonZone → 내려놓기 → 반복
+
+  이 패턴이 같으니 공통 베이스를 만들 수 있어요.
+
+  ---
+  상태 설계
+
+  두 NPC에 공통으로 쓸 수 있는 상태:
+
+  Idle → MovingToA → ActingAtA → MovingToB → ActingAtB → (반복)
+
+  생각해볼 점:
+  - PrisonerController처럼 enum State + ChangeState() 패턴을 쓰면 일관성이
+  생겨요
+  - ActingAtA, ActingAtB는 각 NPC마다 다르니까 → virtual 메서드로 오버라이드
+
+  ---
+  기존 코드와 연동 방법
+
+  광부 NPC가 MineralZone에서 채굴하려면:
+  - MineralZone에는 이미 OnMinedMineral Action이 있어요
+  - 플레이어처럼 Zone에 들어갔을 때 트리거? 아니면 NPC가 직접 Zone에 접근?
+  - 채굴한 광물을 어떻게 들고 다닐까요? → FollowStackSystem 재사용 vs 내부
+  카운터
+
+  수갑 운반 NPC가 HandCuffZone에서 가져오려면:
+  - HandCuffZone에 AddHandCuff()는 있는데 꺼내는 메서드가 없어요
+  - PrisonerZone도 RemoveHandCuff()가 있지만 NPC용이 아님
+  - → 기존 메서드를 NPC도 쓸 수 있게 열어줘야 해요
+
+  ---
+  핵심 설계 질문 3가지
+
+  1. 광부 NPC가 아이템을 들고 다니는 방식: FollowStackSystem 재사용할까요,
+  아니면 별도로 간단한 카운터?
+  2. "언제 출발할까": 스택이 꽉 차면? 일정 시간마다? Zone이 비어있으면 즉시?
+  3. NPC 여러 명이면: 한 Zone에 NPC 2명이 동시에 접근할 수 있어요 →
+  HandCuffZone의 CancellationTokenSource 방식이 NPC에도 적용될까요?
+
+  어떻게 생각하세요?
+
+✻ Churned for 44s
+
+> 1. 광부 NPC는 Mineral을 3번 때려야 캐지고, 캐지면 zone으로 자동으로 이동돼    
+그리고 광부는 3명이소환돼, 2. HandCuffNpc는 PrisonerZone에 수갑이없으면         
+HandCuffZone으로 이동하고 Max는 10이야                                          
+
+● 기존 채굴/아이템 관련 코드 확인할게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● MachineZone도 확인하겠습니다.
+
+  Read 1 file (ctrl+o to expand)
+
+● 다 파악했습니다. 설계 힌트 드릴게요.
+
+  ---
+  광부 NPC 상태
+
+  Idle → MovingToMineral → Mining(3타) → MovingToMachine → Delivering → 반복
+
+  기존 코드에서 문제 발견: Mineral.Mining()을 보면:
+
+  public void Mining()
+  {
+      Managers.GameM.player.FollowStackSystem.AddMineral(); // 플레이어 전용!
+      Managers.GameM.player.OnMineralExit(this);
+  }
+
+  플레이어에 하드코딩되어 있어요. NPC가 쓰려면 어떻게 바꿔야 할까요?
+
+  힌트: Mining() 대신 hp만 깎는 로직을 분리하고, hp == 0이 됐을 때 누가 먹는지를
+   외부에서 결정하도록 만들면 돼요.
+
+  ---
+  수갑 운반 NPC 상태
+
+  Idle → (PrisonZone 수갑 없음 확인) → MovingToHandCuffZone → PickingUp →
+  MovingToPrisonZone → Delivering → 반복
+
+  기존 코드에서 수정 필요한 곳 3군데:
+
+  ┌─────────────────┬─────────────────────────┬─────────────────────────────┐
+  │      파일       │          문제           │          필요한 것          │
+  ├─────────────────┼─────────────────────────┼─────────────────────────────┤
+  │ HandCuffZone.cs │ 수갑 꺼내는 메서드 없음 │ PopHandCuff() 추가          │
+  ├─────────────────┼─────────────────────────┼─────────────────────────────┤
+  │ PrisonerZone.cs │ handCuffStack private   │ HandCuffCount 프로퍼티 공개 │
+  ├─────────────────┼─────────────────────────┼─────────────────────────────┤
+  │ PrisonerZone.cs │ AddToDesk() private     │ public으로 변경             │
+  └─────────────────┴─────────────────────────┴─────────────────────────────┘
+
+  ---
+  공통 이동 로직
+
+  PrisonerController의 이 부분:
+
+  async UniTask AsyncMoveToPosition(Vector3 _targetPos)
+  {
+      while ((transform.position - _targetPos).sqrMagnitude > 0.01f)
+      {
+          transform.position = Vector3.MoveTowards(...);
+          await UniTask.Yield();
+      }
+  }
+
+  두 NPC 모두 이 패턴을 그대로 쓸 거예요. BaseController나 별도 NPCMover에
+  올려서 재사용하는 게 좋을까요, 아니면 각각에 복붙?
+
+  ---
+  시작 전 확인할 것
+
+  1. 광부 3명이 같은 Mineral을 동시에 치면 어떻게 될까요? → 한 명이 채굴 중인
+  Mineral은 다른 광부가 접근 못하게 lock 필요
+  2. 수갑 운반 NPC가 HandCuffZone에 도착했는데 수갑이 아직 없으면? → 대기할까요,
+   돌아갈까요?
+
+  어떻게 처리할지 정하면 각각 구현 시작하죠.
+
+✻ Sautéed for 1m 11s
+
+> 일단, 광부랑 수갑운반NPC 다 각각의 Controller를 만들어야하지?                 
+● 네, 각각 만들어야 해요. 근데 이동 로직이 완전히 같으니까 구조를 먼저 정해야
+  해요.
+
+  선택지 2가지:
+
+  A. 각각 독립 (PrisonerController 방식)
+  MinerController.cs        (이동 + 채굴 행동)
+  HandCuffCarrierController.cs (이동 + 수갑 운반 행동)
+  → 이동 코드 중복, 구현 빠름
+
+  B. 공통 베이스 + 각각 Controller
+  NPCController.cs          (이동 로직만)
+    ├── MinerController.cs        (채굴 행동)
+    └── HandCuffCarrierController.cs (수갑 운반 행동)
+  → 이동 코드 한 곳, 나중에 NPC 추가 쉬움
+
+  ---
+  이미 BaseController → PrisonerController 패턴이 있는데, 기존 구조랑 맞추면 B가
+   자연스러워요.
+
+  NPCController에 들어갈 건 이 하나예요:
+
+  protected async UniTask MoveToPosition(Vector3 targetPos)
+
+  PrisonerController에 이미 이 로직이 있으니까, 거기서 뽑아서 올리면 됩니다.
+
+  ---
+  어떤 방식으로 할지 정하면 NPCController부터 짜볼게요.
+
+>  NPCController를 만들어서 PrisonerController를 밑으로 넣으면 되나?            
+
+● 네, 딱 맞는 방향이에요.
+
+  BaseController
+  └── NPCController        ← AsyncMoveToPosition, speed, anim 여기로
+      ├── PrisonerController
+      ├── MinerController
+      └── HandCuffCarrierController
+
+  NPCController에 올라갈 것들은 PrisonerController에서 모든 NPC가 공통으로 쓸 
+  것들이에요:
+
+  // 이것들이 NPCController로 이동
+  float speed = 2f;
+  Animator anim;
+
+  protected async UniTask AsyncMoveToPosition(Vector3 _targetPos)
+  {
+      while ((transform.position - _targetPos).sqrMagnitude > 0.01f)
+      {
+          transform.position = Vector3.MoveTowards(transform.position,
+  _targetPos, Time.deltaTime * speed);
+          anim.SetState(Define.State.Run);
+          await UniTask.Yield();
+      }
+      anim.SetState(Define.State.Idle);
+  }
+
+  PrisonerController에서는 이 3개를 삭제하고, NPCController를 상속받으면 돼요.
+
+  ---
+  한 가지 확인: PrisonerController의 AsyncMoveToPosition에는 IsArrived 플래그가
+  있는데:
+
+  IsArrived = false;
+  // ...
+  IsArrived = true;
+
+  이건 수감자 전용 로직이라 NPCController로 올리면 안 되고 PrisonerController에
+  남겨야 해요. 올릴 때 오버라이드로 처리하거나, PrisonerController에서 메서드를
+  약간 다르게 쓸 방법을 생각해보세요.
+
+  NPCController.cs 먼저 짜볼게요?
+
+> NPCController 한번 짜보자                                                     
+
+● 직접 먼저 시도해보세요. 구조 힌트만 드릴게요.
+
+  ---
+  NPCController에 들어갈 것:
+
+  1. speed 필드
+  2. Animator anim 필드
+  3. Init() → anim 컴포넌트 가져오기
+  4. AsyncMoveToPosition() → protected (자식만 접근)
+
+  접근 순서:
+  1. BaseController를 상속
+  2. Init()에서 base.Init() 호출 패턴은 PrisonerController랑 동일하게
+  3. AsyncMoveToPosition은 IsArrived 없는 버전으로 (그건 Prisoner 전용)
+
+  ---
+  짜보시고 코드 보여주시면 같이 검토할게요.
+
+> 일단 작성했어                                                                 
+
+● 코드 보여주세요!
+
+> 너가 확인해봐                                                                 
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● 잘 짰어요. 딱 필요한 것만 있고 깔끔해요.
+
+  잘된 점:
+  - anim을 protected로 → 자식 클래스에서 접근 가능
+  - base.Init() 패턴 유지
+  - IsArrived 없는 순수 이동 로직
+
+  한 가지 체크: speed가 private인데, 나중에 광부/수갑운반 NPC가 다른 속도를
+  가지려면 protected로 바꿔야 해요. 지금은 괜찮지만 염두에 두세요.
+
+  ---
+  다음 단계: PrisonerController에서 중복 코드를 제거해야 해요.
+
+  PrisonerController에서 삭제할 것들:
+  float speed = 2f;       // ← 삭제
+  Animator anim;          // ← 삭제
+  // AsyncMoveToPosition 전체 메서드 ← 삭제
+
+  그리고 상속을 BaseController → NPCController로 바꾸면 돼요:
+  public class PrisonerController : NPCController  // BaseController → 
+  NPCController
+
+  해보시겠어요?
+
+> 지웠는데, IsArrive때문에 그대로 써야되는거아냐?                               
+
+● 맞아요, IsArrived가 AsyncMoveToPosition 안에서 세팅되니까 그냥 삭제하면 안
+  돼요.
+
+  해결 방법은 override예요:
+
+  NPCController의 메서드를 virtual로 열고:
+  protected virtual async UniTask AsyncMoveToPosition(Vector3 _targetPos)
+
+  PrisonerController에서 override해서 IsArrived만 추가:
+  protected override async UniTask AsyncMoveToPosition(Vector3 _targetPos)
+  {
+      IsArrived = false;
+      await base.AsyncMoveToPosition(_targetPos);  // 이동 로직은 부모가
+      IsArrived = true;
+  }
+
+  이렇게 하면:
+  - 이동 로직은 NPCController 한 곳에만
+  - IsArrived는 PrisonerController만 책임
+
+  한번 해보세요.
+
+> 이제 minerController, JailerController 비슷하게 만들면 되는거지?              
+
+● 네, 기본 틀은 같아요. NPCController 상속 + 자기만의 State enum +
+  ChangeState().
+
+  다만 각각 시작 전에 생각해볼 것이 있어요.
+
+  ---
+  MinerController
+
+  어떤 Zone 참조가 필요한가요?
+  - 어디서 광물을 캐는지 → MineralZone
+  - 캔 광물을 어디에 넣는지 → MachineZone
+
+  그리고 현재 Mineral.Mining()이 플레이어 전용이라 광부 NPC가 쓸 수 없어요. 채굴
+   시 Mineral의 hp를 어디서 깎고, 0이 됐을 때 누가 처리할지 설계가 필요해요.
+
+  ---
+  JailerController
+
+  어떤 Zone 참조가 필요한가요?
+  - 수갑을 가져오는 곳 → HandCuffZone
+  - 수갑을 전달하는 곳 → PrisonerZone
+
+  그리고 HandCuffZone에 현재 NPC가 수갑을 꺼내는 메서드가 없어요. PopHandCuff()
+  같은 걸 추가해야 해요.
+
+  ---
+  두 개 중에 어떤 걸 먼저 만들어볼 건가요?
+
+> 일단 Miner부터 해보자                                                         
+
+● Define.cs 봤어요. MiningWorkerState에 대해 먼저 얘기해볼게요.
+
+  지금 정의한 상태:
+  Idle, Run, Mining
+
+  그런데 광부의 행동 루프를 생각해보면:
+
+  광물로 이동 → 채굴(3타) → 기계로 이동 → 전달 → 반복
+
+  Run만으론 "광물로 가는 중"인지 "기계로 가는 중"인지 구분이 안 돼요.
+
+  힌트: PrisonerState가 Waiting, WalkingRoom 처럼 무엇을 하러 가는지가 드러나는
+  이름인 것처럼, 광부도 목적지가 드러나면 좋아요.
+
+  MovingToMineral  → 광물 캐러 이동
+  Mining           → 채굴 중
+  MovingToMachine  → 기계로 이동
+  Delivering       → 광물 전달 중
+
+  ---
+  MiningWorkerState 수정하고 나서 MinerController 짜보세요.
+
+  짤 때 생각해볼 것:
+  - SetInfo()에서 어떤 참조를 받아야 할까요? (MineralZone, MachineZone)
+  - Mineral의 hp는 누가 깎나요? (현재 Mining()은 플레이어 전용)
+
+> 광물은 그냥 캐는순간 zone으로 자동으로 날아간다니까. 광부는 말 그대로 광물만  
+캐면 돼                                                                         
+
+● 아, 그러면 훨씬 단순해져요.
+
+  광부 상태 2개면 충분:
+  MovingToMineral  → 광물로 이동
+  Mining           → 3번 채굴 (완료되면 자동으로 날아감)
+
+  MiningWorkerState에서 Run, Delivering 다 필요 없고 이것만:
+  public enum MiningWorkerState
+  {
+      MovingToMineral,
+      Mining,
+  }
+
+  ---
+  그런데 Mineral.Mining()이 문제예요. 지금 코드:
+
+  public void Mining()
+  {
+      Managers.GameM.player.FollowStackSystem.AddMineral(); // 플레이어 스택에 
+  추가
+      Managers.GameM.player.OnMineralExit(this);
+  }
+
+  광부 NPC가 채굴하면 플레이어 스택이 아니라 MachineZone으로 바로 날아가야
+  하니까 이 메서드를 그대로 쓸 수 없어요.
+
+  힌트: Mineral에 NPC용 메서드를 따로 만들어요:
+  public void NPCMine(MachineZone _machineZone)
+  {
+      // MachineZone으로 바로 날아가는 처리
+  }
+
+  MachineZone.AddMineral(Transform)이 이미 있으니까 거기서 호출하면 돼요.
+
+  Mineral.cs에 NPCMine() 먼저 추가해보세요.
+
+> 대충 짜놨는데 맞는지 봐줄래?                                                  
+
+● Mineral.cs 확인했어요.
+
+  문제: NPCMining()이랑 NPCMine() 두 개가 있는데 하나는 비어있어요. 하나로
+  합쳐야 해요.
+
+  NPCMining()의 TODO 부분 - MachineZone으로 날리려면 참조가 필요해요. 지금
+  Mineral이 MachineZone을 모르는 상태예요.
+
+  두 가지 방법:
+  // A. 파라미터로 받기
+  public void NPCMining(MachineZone _machineZone)
+
+  // B. Mineral이 필드로 들고 있기
+  public MachineZone machineZone;
+
+  zone(MineralZone)을 이미 필드로 들고 있는 패턴이니까 B가 자연스럽게 맞아요.
+
+  hp == 0일 때 해야 할 것도 힌트 드릴게요:
+
+  1. machineZone.AddMineral(transform)  → 이미 DOJump 포함
+  2. zone.ReSpawnMineral(this, reSpawnTime)  → 리스폰 예약
+  3. gameObject.SetActive(false)  → 비활성화
+
+  플레이어 Mining() 끝부분이랑 똑같은 패턴이에요. 참고해보세요.
+
+> 각각 NPC를 생성할경우에 Zone을 참조시키고 생성한다고 치면, 제일 효과적인게    
+드래그앤드랍으로 참조시키는거지?                                                
+● 드래그앤드랍도 되지만 광부 3명이면 3번 드래그해야 하고, 나중에 동적 소환 시 못
+   써요.
+
+  기존 패턴을 보면 더 좋은 방법이 있어요.
+
+  PrisonerZone이 직접 수감자를 소환하는 패턴:
+  // PrisonerZone.cs
+  PrisonerController prisoner = Managers.ObjectM.SpawnPrisoner(pos);
+  prisoner.SetInfo(pos, arriveState, this); // zone이 자기 자신을 넘김
+
+  광부도 같은 방식으로 MineralZone이 광부를 소환하면 자연스러워요:
+
+  // MineralZone.cs
+  void SpawnMiners()
+  {
+      for (int i = 0; i < 3; i++)
+      {
+          MiningWorkerController worker =
+  Managers.ObjectM.SpawnMiningWorker(spawnPos);
+          worker.SetInfo(this, machineZone); // MineralZone이 참조 전달
+      }
+  }
+
+  MineralZone은 MachineZone만 드래그앤드랍으로 갖고 있으면 되고, 광부들은 코드로
+   일괄 소환돼요.
+
+  MineralZone에 [SerializeField] MachineZone machineZone 추가하고 SpawnMiners()
+  짜볼게요?
+
+> 근데 그렇게 하게되면, PurchaseZone이 이미 각각의 zone을 참조하고있다는건데,   
+PurchaseZone에서 Spawn해서 생성할때 setinfo로 넘겨주면되는거아냐?               
+
+● PurchaseZone 코드 먼저 확인할게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● 맞아요, 이미 PurchaseZone에서 worker.SetInfo()를 호출하고 있네요. 구조가 딱
+  맞아요.
+
+  PurchaseZone에 Zone 참조만 추가하면 돼요:
+
+  [SerializeField] MineralZone mineralZone;   // 광부용
+  [SerializeField] MachineZone machineZone;   // 광부용
+  [SerializeField] HandCuffZone handCuffZone; // 수갑운반용
+  [SerializeField] PrisonerZone prisonerZone; // 수갑운반용
+
+  그러면 SetInfo에 넘겨주기만 하면 돼요:
+
+  case Define.NPCType.MiningWorker:
+      worker.SetInfo(mineralZone, machineZone); // 이렇게
+
+  case Define.NPCType.Jailer:
+      jailer.SetInfo(handCuffZone, prisonerZone); // 이렇게
+
+  인스펙터에서 각 PurchaseZone마다 해당 Zone을 드래그앤드랍 한 번씩만 해주면
+  끝이에요.
+
+  이제 MiningWorkerController.SetInfo(MineralZone, MachineZone) 시그니처
+  정해졌으니 컨트롤러 짜볼게요?
+
+> 일단 MiningWorker는 다 만들었어 확인해볼래? 그리고 이제 Jailer를              
+만들어야되는데, 한번 만들어 볼게                                                
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Mineral.cs도 같이 확인할게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● 잘 짰어요. 구조가 깔끔해요. 두 가지만 짚을게요.
+
+  ---
+  1. StartMining() while loop
+
+  while (mineral != null && mineral.gameObject.activeSelf)
+  {
+      anim.SetState(Define.State.Mining);   // 매 0.5초마다 반복 호출
+      await UniTask.Delay(500);
+  }
+
+  OnMiningAnimEnd()가 애니메이션 이벤트로 호출되는 구조라면, SetState(Mining) 한
+   번만 해도 애니메이션이 루프하면서 이벤트가 반복 발생해요. 매 0.5초마다 반복
+  호출은 불필요해요.
+
+  ---
+  2. Mineral.NPCMining()의 DOJump 중복
+
+  Transform mineral = Managers.ObjectM.SpawnBackMineral(transform.position);
+  mineral.DOJump(machineZone.transform.position, ...)  // 1번 점프
+      .OnComplete(() =>
+      {
+          machineZone.AddMineral(mineral);  // AddMineral 내부에도 DOJump 있음 →
+   2번 점프
+      });
+
+  MachineZone.AddMineral()이 이미 DOJump를 포함하니까 중간 점프가 불필요해요.
+  그냥 바로 호출해도 돼요:
+
+  Transform mineral = Managers.ObjectM.SpawnBackMineral(transform.position);
+  machineZone.AddMineral(mineral);  // AddMineral이 위치 계산 + DOJump 다 처리
+
+  ---
+  이 두 가지 수정하고 Jailer 만들어보세요.
+
+✻ Crunched for 54s
+
+> 2번은 바로 호출하니까 Mineral이 보이지도 않고 사라져서 둔건데 문제가 될까?    
+
+● 아, 이유가 있었군요. SpawnBackMineral이 스폰 시 DOScale(from: zero)로 등장
+  애니메이션을 실행하는데, 바로 AddMineral을 호출하면 AddMineral.OnComplete의
+  DOScale(from: zero)랑 충돌해서 사라져 보이는 거예요.
+
+  그러면 현재 방식이 맞아요. 문제 없어요.
+
+  Jailer 짜보세요!
+
+> 각각의 zone에 Trigger를 해야되잖아? Jailer같은경우 에는 Layer를               
+Player쓰지말고 Jailer라고 만드는게 나을까?                                      
+
+● 네, 맞아요. 지금 모든 Zone의 OnTriggerEnter가 LayerMask("Player")로 체크하고
+  있어서 Jailer가 진입해도 반응 안 해요.
+
+  레이어 분리가 맞아요. 이유:
+
+  - Player 트리거 → 플레이어만 반응
+  - Jailer 트리거 → Jailer만 반응
+  - 나중에 MiningWorker도 같은 방식으로 확장 가능
+
+  ---
+  수정이 필요한 Zone 2곳:
+
+  HandCuffZone - Jailer가 진입해서 수갑 픽업
+  // 기존
+  if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
+
+  // 추가
+  if (other.gameObject.layer == LayerMask.NameToLayer("Jailer"))
+      // jailer.OnEnterHandCuffZone() 같은 방식
+
+  PrisonerZone - Jailer가 진입해서 수갑 전달
+
+  ---
+  레이어 추가 순서:
+  1. Unity에서 Jailer 레이어 생성
+  2. Jailer 프리팹에 레이어 적용
+  3. 각 Zone의 OnTriggerEnter에 Jailer 분기 추가
+
+  Jailer 레이어 만들고 JailerController 짜보세요.
+
+> HandCuffZone에서 PlayerController랑 JailController를 같이 사용하기위해        
+인터페이스로 만들었는데 이건 어떻게 생각해?                                     
+
+● 좋은 판단이에요. 인터페이스로 묶은 게 맞아요.
+
+  IHandCuffReceiver 코드 확인할게요.
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● 깔끔해요. 딱 필요한 것만 있어요.
+
+  한 가지 확인할 것 - PlayerController가 IHandCuffReceiver를 구현했나요?
+
+  HandCuffZone.StartCheck(Managers.GameM.player)를 호출하는데,
+  PlayerController에 AddHandCuff와 HandCuffPosition이 직접 있어야 해요.
+
+  현재 플레이어는 FollowStackSystem에 위임하는 구조라서:
+
+  public class PlayerController : CreatureController, IHandCuffReceiver
+  {
+      public Vector3 HandCuffPosition => followStackSystem.HandCuffPosition;
+
+      public void AddHandCuff(Transform _handcuff)
+      {
+          followStackSystem.AddHandCuff(_handcuff);
+      }
+  }
+
+  이렇게 되어 있나요? 확인해보세요.
+
+> 다 되어있어  다시 확인해봐                                                    
+
+  Read 1 file (ctrl+o to expand)
+
+● 완벽해요. IHandCuffReceiver 구현 다 되어 있어요.
+
+  이제 JailerController 짜보세요. 참고로 구조 정리하면:
+
+  SetInfo(HandCuffZone, PrisonerZone)
+  ChangeState:
+    MovingToHandCuffZone → 이동 → 도착하면 Zone이 자동으로 수갑 채워줌 (이미
+  구현됨)
+    MovingToPrisonZone   → 이동 → PrisonerZone에 수갑 전달
+
+  HandCuffZone은 Jailer가 들어오면 StartCheck(jailer)로 수갑을 자동으로
+  채워주니까, Jailer는 언제 출발할지만 판단하면 돼요:
+  - 수갑이 Max(10)만큼 찼을 때
+  - 또는 HandCuffZone 수갑이 더 없을 때
+
+  짜보세요!
+
+> Jailer까지 다 짰고, 이제 방만 해결하면되는데 방 조건은 방 정원이 다 차면 다음 
+ 방으로 업그레이드 시킬수 있는 zone이 나오는거거든? 방 데이터도 따로            
+만들어주는게 좋으려나?                                                          
+● 기존 코드 확인할게요.
+
+  Read 2 files (ctrl+o to expand)
+
+● 이미 PrisonRoom에 upgradeZone 참조가 있어요. 핵심 로직은 간단해요.
+
+  Enter()에서 꽉 찼을 때 Zone 활성화만 추가하면 돼요:
+
+  public void Enter()
+  {
+      currentCount++;
+      if (!HasSpace)
+      {
+          // upgradeZone 활성화
+      }
+  }
+
+  PurchaseZone.OnPurchaseComplete()의 nextZone 활성화 코드 패턴이랑 똑같이 하면
+  돼요.
+
+  ---
+  방 데이터 ScriptableObject 여부:
+
+  maxCount가 지금 20으로 하드코딩되어 있는데, 방마다 정원이 다른가요?
+
+  - 방마다 다르다 → ScriptableObject 만드는 게 맞음
+  - 다 똑같다 → [SerializeField] int maxCount로 인스펙터에서 설정만 해도 충분
+
+  CLAUDE.md 원칙상 수치는 외부화가 맞지만, 과제 범위에서 maxCount 하나만을 위해
+  ScriptableObject 만드는 건 오버일 수 있어요. 어떻게 할지는 본인 판단이에요.
+
+> 방은 하나야, 방은 하나고 방이 계속 업그레이드 되는 식이야                     
+
+● 그러면 구조가 훨씬 단순해져요.
+
+  흐름:
+  방 정원 다 참 → upgradeZone 활성화 → 플레이어 결제 → 방 정원 증가 → 반복
+
+  데이터 설계:
+
+  WeaponData가 nextWeapon 체인 구조인 것처럼, 방도 같은 패턴으로 하면 깔끔해요:
+
+  [CreateAssetMenu]
+  public class RoomData : ScriptableObject
+  {
+      public int maxCount;      // 이 레벨의 정원
+      public RoomData nextLevel; // 다음 업그레이드 (없으면 null = 최대)
+  }
+
+  PrisonRoom은 이렇게:
+
+  [SerializeField] RoomData currentData;
+
+  public bool HasSpace => currentCount < currentData.maxCount;
+
+  public void Upgrade()
+  {
+      if (currentData.nextLevel != null)
+          currentData = currentData.nextLevel;
+  }
+
+  PurchaseZone은 완료 시 PrisonRoom.Upgrade() 호출.
+
+  ---
+  PurchaseZoneData에 Define.PurchaseType.UpgradeRoom 타입 추가하고, PrisonRoom
+  참조만 넣어주면 돼요. 짜볼게요?
+
+> Enter까지 완성했어 근데, 지금 내 게임 수감자 기준이 PrisonController에서      
+WalkingRoom상태일때 가득찬거 체크해서 enter해주잖아? 이렇게 말고, InRoom으로    
+들어왔을때 enter를 해서 들어오면 1이 늘어나게 하고싶은데, 이러면 문제가         
+생기려나?                                                                       
+
+● 현재 코드 다시 볼게요.
+
+  Read 1 file (ctrl+o to expand)
+
+● 문제가 생길 수 있어요.
+
+  현재 흐름:
+  HasSpace 체크 → Enter() (자리 예약) → 이동 → InRoom
+
+  Enter()를 InRoom으로 옮기면:
+  HasSpace 체크 → 이동 → InRoom → Enter()
+
+  문제: 두 수감자가 거의 동시에 HasSpace를 체크하면 둘 다 true를 받고 이동
+  시작해요. 하지만 Enter()가 아직 안 불렸으니 방 카운트가 올라가지 않아서 정원 
+  초과가 발생할 수 있어요.
+
+  ---
+  원하는 의도(실제로 방에 들어왔을 때 카운트)를 살리면서 안전하게 하려면
+  예약/입장을 분리하면 돼요:
+
+  // PrisonRoom
+  int reservedCount = 0;
+
+  public bool HasSpace => (currentCount + reservedCount) < maxCount;
+
+  public void Reserve() { reservedCount++; }  // 이동 시작 시
+  public void Enter()                          // InRoom 시
+  {
+      reservedCount--;
+      currentCount++;
+      if (!HasSpace) upgradeZone 활성화
+  }
+
+  이렇게 하면 HasSpace 체크 시점에 예약으로 자리를 막고, 실제 입장 시 카운트가
+  올라가요.
+
+  이 방식으로 할까요?
+
+✻ Brewed for 40s
+
+> 바꿨고 테스트 끝냈어 이제 UI만 하면되는데, Max라는 UI를 특정 개수가 넘으면    
+UI로 띄우고싶은데 이건 어떤방식으로 하는게좋을까? 계속 띄워져있는게아니라       
+WorldSpace방법으로 하면 안될거같은데                                            
+
+● Screen Space - Overlay에 DOTween으로 잠깐 띄우는 방식이 맞아요.
+
+  WorldSpace는 항상 렌더링되고, 카메라 각도에 따라 겹침 문제도 있어서 적합하지
+  않아요.
+
+  ---
+  추천 방식:
+
+  UIManager에 ShowMax(Vector3 worldPos) 메서드
+  → Camera.WorldToScreenPoint()로 화면 좌표 변환
+  → "MAX" 텍스트를 해당 위치에 배치
+  → DOTween으로 올라가면서 페이드아웃 (1~1.5초)
+
+  이미 FollowStackSystem에 //TODO : UI MAX띄우기 주석이 있는 곳에서 호출하면
+  돼요.
+
+  ---
+  이미 비슷한 패턴이 있어요 - MoneyZone에서 돈이 날아가는 연출처럼 짧게 보여주고
+   사라지는 방식이에요.
+
+  구현 순서:
+  1. Canvas(Screen Space Overlay)에 MAX용 TextMeshPro 준비
+  2. UIManager.ShowMax(Vector3 _worldPos) 작성
+  3. FollowStackSystem의 TODO 위치에서 호출
+
+  플레이어 스택 MAX만 필요한가요, 아니면 MachineZone, HandCuffZone MAX도
+  필요한가요?
+
+> 다 필요해 Jailer한테도 필요해                                                 
+
+● 그러면 UIManager.ShowMax(Vector3 worldPos) 하나로 다 처리하면 돼요. 호출하는
+  곳만 다를 뿐이에요.
+
+  호출 위치 4곳:
+
+  ┌────────────────────────────────┬──────────────────────┐
+  │              위치              │         조건         │
+  ├────────────────────────────────┼──────────────────────┤
+  │ FollowStackSystem.AddMineral() │ 이미 TODO 있음       │
+  ├────────────────────────────────┼──────────────────────┤
+  │ MachineZone.AddMineral()       │ IsFull일 때          │
+  ├────────────────────────────────┼──────────────────────┤
+  │ HandCuffZone.AddHandCuff()     │ IsFull일 때          │
+  ├────────────────────────────────┼──────────────────────┤
+  │ JailerController               │ 수갑 Max(10) 찼을 때 │
+  └────────────────────────────────┴──────────────────────┘
+
+  모두 이렇게 호출:
+  Managers.UIM.ShowMax(transform.position);
+
+  ---
+  UIManager.ShowMax() 구현 힌트:
+
+  public void ShowMax(Vector3 _worldPos)
+  {
+      Vector3 screenPos = Camera.main.WorldToScreenPoint(_worldPos);
+      // maxText 위치 설정
+      // DOTween: 올라가면서 페이드아웃
+  }
+
+  DOTween 조합:
+  // 위치는 screenPos에서 위로 올라가며
+  // 알파는 0으로 페이드
+  Sequence seq = DOTween.Sequence();
+  seq.Append(rect.DOAnchorPosY(screenPos.y + 50f, 1f))
+     .Join(canvasGroup.DOFade(0f, 1f))
+     .OnComplete(() => maxObject.SetActive(false));
+
+  UIManager에 ShowMax() 먼저 짜볼게요?
+
+> 만들었는데, 이거 재활용되야되잖아? 풀링으로 사용하는게 나을까?                
+
+● 풀링이 맞아요. MAX UI는 여러 곳에서 동시에 뜰 수 있거든요 (플레이어 스택 +
+  MachineZone 동시에 MAX인 경우).
+
+  그런데 기존 PoolManager는 게임 오브젝트용이라 UI에 바로 적용하기 애매해요.
+
+  UI 풀링은 간단하게 UIManager 내부에 작게 만드는 게 나아요:
+
+  // UIManager
+  Queue<MaxUI> maxUIPool = new();
+
+  MaxUI GetMaxUI()
+  {
+      if (maxUIPool.Count > 0)
+      {
+          var ui = maxUIPool.Dequeue();
+          ui.gameObject.SetActive(true);
+          return ui;
+      }
+      return Instantiate(maxUIPrefab, canvas.transform);
+  }
+
+  void ReturnMaxUI(MaxUI _ui)
+  {
+      _ui.gameObject.SetActive(false);
+      maxUIPool.Enqueue(_ui);
+  }
+
+  MaxUI 스크립트에서 애니메이션 완료 시 ReturnMaxUI() 호출하면 돼요.
+
+  ---
+  풀 사이즈는 동시에 최대 몇 개까지 뜰 수 있는지 생각해보면 돼요. 지금 MAX 뜨는
+  곳이 4곳이니까 3~4개 정도면 충분해요.
+
+  MaxUI 스크립트 먼저 만들어볼게요?
+
+> 만들었는데 확인해볼래? 그리고, 만약 플레이어가 max를 띄울때 조건이 한번       
+띄우면 한 2초동안은 못띄우게 하는게 나을거같은데 어떤 조건을 줘야할까?          
+
+  Searched for 2 patterns, read 1 file (ctrl+o to expand)
+
+● UI_Max 깔끔해요. 한 가지만 - Play() 시작 시 알파 초기화가 없어요:
+
+  public void Play(Vector3 _screenPos, System.Action _onComplete)
+  {
+      maxText.DOFade(1f, 0f); // ← 이거 추가 필요 (풀링 재사용 시 알파가 0인 
+  채로 시작)
+      transform.position = _screenPos;
+      // ...
+  }
+
+  ---
+  쿨다운 질문 - 소스별로 독립적으로 관리해야 해요.
+
+  플레이어 스택 MAX랑 MachineZone MAX는 쿨다운이 각각 따로 돌아야 하니까,
+  호출하는 쪽에 Time.time 체크를 두는 게 제일 단순해요:
+
+  float lastMaxTime = -999f;
+  const float maxCooldown = 2f;
+
+  // ShowMax 호출 전에
+  if (Time.time - lastMaxTime >= maxCooldown)
+  {
+      lastMaxTime = Time.time;
+      Managers.UIM.ShowMax(transform.position);
+  }
+
+  이걸 FollowStackSystem, MachineZone, HandCuffZone, JailerController 각각에
+  넣으면 돼요.
+
+  공통 로직이니까 UIManager에 헬퍼로 올릴 수도 있어요:
+
+  // UIManager
+  public bool TryShowMax(Vector3 _worldPos, ref float _lastTime, float _cooldown
+   = 2f)
+  {
+      if (Time.time - _lastTime < _cooldown) return false;
+      _lastTime = Time.time;
+      ShowMax(_worldPos);
+      return true;
+  }
+
+  호출:
+  Managers.UIM.TryShowMax(transform.position, ref lastMaxTime);
+
+  어떤 방식이 더 맞아요?
+
+✻ Brewed for 32s
+
+> 2번 방식으로 만들었어 확인해주라, 그리고 마지막으로 Prisoner의 머리 위에      
+그들이 원하는 수갑의 개수를 띄워줘야하는데 이것도 UIMAx방식으로 만드는게        
+나으려나?                                                                       
+
+  Searched for 1 pattern, read 1 file (ctrl+o to expand)
+● UIManager 깔끔해요. 완성도 높아요.
+
+  ---
+  수감자 머리 위 UI는 UI_Max 방식과 달라요.
+
+  UI_Max는 "잠깐 뜨고 사라지는" 용도인데, 수감자 UI는:
+  - 수갑을 다 받을 때까지 계속 표시
+  - 수갑 받을 때마다 숫자 업데이트
+  - 수감자를 따라다님
+
+  이런 특성이면 WorldSpace Canvas를 수감자 프리팹 자식으로 붙이는 게 맞아요.
+  아까 MAX에 WorldSpace가 맞지 않았던 이유는 "따라다닐 대상이 없었기"
+  때문이에요.
+
+  구조:
+  Prisoner (프리팹)
+  └── UI_HandCuffCount (WorldSpace Canvas)
+      └── Text "2/5"
+
+  동작 방식:
+  - WaitingHandCuff 상태 진입 시 → UI 활성화 + 초기값 표시
+  - ReceiveHandCuff() 호출 시 → 숫자 업데이트
+  - WalkingRoom 상태 진입 시 → UI 비활성화
+
+  PrisonerController에서 직접 UI를 갖고 제어하면 되고, 풀링도 수감자 프리팹
+  자체가 풀링되니까 별도 풀링 불필요해요.
+
+  이 방식으로 짜볼게요?
+
+✻ Sautéed for 31s
+
+> 한번 짜보자                                                                   
+
+● 직접 먼저 시도해보세요. 힌트만 드릴게요.
+
+  ---
+  필요한 것:
+
+  UI_PrisonerHandCuff.cs (WorldSpace Canvas 자식에 붙일 스크립트)
+  - TextMeshProUGUI 참조
+  - Show(int current, int need)  → 활성화 + 텍스트 세팅
+  - UpdateCount(int current, int need) → 텍스트 업데이트
+  - Hide() → 비활성화
+
+  PrisonerController에서 호출 위치:
+
+  SetInfo()          → Hide()
+  WaitingHandCuff    → Show(0, needHandCuffs)
+  ReceiveHandCuff()  → UpdateCount(currentHandCuffs, needHandCuffs)
+  WalkingRoom        → Hide()
+
+  텍스트 포맷은 $"{current}/{need}" 또는 $"{need - current}" 중 어떤 게 좋을지
+  정하고 시작하세요.
+
+  짜보고 코드 보여주세요!
+
+> 꼭 UI_PrisonerHandCuff가 있어야되나? PrisonerController에서 다 해결하면       
+안되는건가?                                                                     
+
+● 없어도 돼요. PrisonerController에서 직접 TextMeshPro 참조해서 제어하면
+  충분해요.
+
+  별도 스크립트가 필요한 경우는 UI 로직이 복잡하거나 재사용이 필요할 때인데,
+  지금은 텍스트 하나 켜고/끄고/업데이트가 전부라서 PrisonerController에서 직접
+  해도 깔끔해요.
+
+  [SerializeField] TextMeshProUGUI handCuffText;
+  [SerializeField] GameObject handCuffUI;
+
+  // WaitingHandCuff 진입 시
+  handCuffUI.SetActive(true);
+  handCuffText.text = $"0/{needHandCuffs}";
+
+  // ReceiveHandCuff() 시
+  handCuffText.text = $"{currentHandCuffs}/{needHandCuffs}";
+
+  // WalkingRoom 진입 시
+  handCuffUI.SetActive(false);
+
+  짜보세요!
+
+> 테스트까지 다 끝냈고, 마지막으로 궁금한게 하나있는데, prison에 인원이 다      
+차게되면 prisonerCOntroller들은Define.PrisonerState.WaitingRoom여기 들어가서    
+아무것도 안하잖아?  해당 prisoner들이 upgrade된 후에 방에 들어가게 하려면       
+어떤식으로 설계해야해?                                                          
+
+● 핵심은 "업그레이드됐다는 사실을 WaitingRoom 수감자들에게 어떻게 알릴 것인가"
+  예요.
+
+  두 가지 방법이 있어요.
+
+  ---
+  A. UniTask.WaitUntil (단순)
+
+  PrisonerController의 WaitingRoom 분기에서 공간이 생길 때까지 대기:
+
+  case Define.PrisonerState.WaitingRoom:
+      AsyncWaitForSpace().Forget();
+      break;
+
+  async UniTaskVoid AsyncWaitForSpace()
+  {
+      await UniTask.WaitUntil(() => zone.PrisonRoom.HasSpace);
+      ChangeState(Define.PrisonerState.WalkingRoom);
+  }
+
+  문제: 공간이 1개 생겼을 때 WaitingRoom 수감자 여럿이 동시에 HasSpace true를
+  받아서 몰려들 수 있어요.
+
+  ---
+  B. PrisonRoom이 대기 Queue 관리 (안전)
+
+  WaitingRoom 진입 → PrisonRoom.waitingQueue에 등록
+  Upgrade() 호출 → 빈 자리만큼 waitingQueue에서 꺼내 순서대로 입장
+
+  PrisonRoom:
+  Queue<PrisonerController> waitingQueue = new();
+
+  public void AddToWaiting(PrisonerController _prisoner)
+      => waitingQueue.Enqueue(_prisoner);
+
+  public void Upgrade()
+  {
+      // 데이터 업그레이드 로직...
+
+      while (HasSpace && waitingQueue.Count > 0)
+      {
+          var prisoner = waitingQueue.Dequeue();
+          prisoner.ChangeState(Define.PrisonerState.WalkingRoom);
+      }
+  }
+
+  순서 보장되고 동시 진입 문제도 없어요.
+
+  ---
+  B가 안전해요. 어떤 방식으로 할게요?
+
+> 튜토리얼을 빼먹었는데, 일단 만들어놓긴했는데, 해당 부분 도착하면 event로      
+처리해주고, 광물같은 튜토리얼은 CheckCondition으로 만들었는데 확인한번 해줄래?  
+
+  Searched for 1 pattern, read 2 files (ctrl+o to expand)
+
+● 잘 짰어요. 구조가 명확하고 CheckArrival/CheckCondition 분리도 좋아요.
+
+  두 가지만 짚을게요.
+
+  ---
+  1. MineMineral 스텝에서 화살표 처리
+
+  case Define.TutorialStep.MineMineral:
+      // arrow.SetTarget() 호출 없음
+      CheckCondition(...).Forget();
+
+  이미 MineralZone에 도착한 상태라 화살표가 이전 mineralZoneTarget을 계속
+  가리켜요. 의도적으로 "여기서 캐세요" 표시로 두는 건 괜찮은데, 만약 어색하다면
+  arrow.Hide()로 채굴 중엔 숨기는 게 나을 수 있어요.
+
+  ---
+  2. Complete 이후 TutorialArrows Update 낭비
+
+  case Define.TutorialStep.Complete:
+      arrow.Hide();  // target = null로 설정
+      break;
+
+  TutorialArrows.Update()가 target == null이면 바로 return하니까 성능 문제는
+  없어요. 하지만 TutorialManager 자체도 gameObject.SetActive(false) 해주면 더
+  깔끔해요.
+
+  ---
+  나머지는 문제없어요. IsTargetVisible() 뷰포트 체크로 화면 안/밖 화살표
+  전환하는 것도 잘 구현했어요.
+
+✻ Cogitated for 52s
+
+> 바꿧는데 확인해줄래?                                                          
+
+  Read 2 files (ctrl+o to expand)
+
+● 깔끔하게 수정됐어요. 잘 됐어요.
+
+  한 가지만 확인: CheckArrival에서 arrow.Hide() 후 바로 _onComplete()로
+  ChangeStep이 호출되는데, GetHandCuff 같은 스텝은 즉시 arrow.SetTarget()을 다시
+   호출해요:
+
+  도착 → Hide() → ChangeStep(GetHandCuff) → SetTarget(handCuffZoneTarget)
+
+  Hide()가 gameObject.SetActive(false)를 안 하니까 SetTarget()에서 바로 다시
+  활성화돼서 문제없어요. 의도대로 동작해요.
+
+  Hide()랑 EndTutorial()이 중복 코드긴 한데, 역할이 명확히 달라서 그냥 두는 게
+  맞아요.
+
+  튜토리얼까지 완성이네요. 전체적으로 잘 마무리됐어요.
+
+> 마지막으로 캐릭터를 4초이상 움직이지않을떄 손가락 모양으로 무한대 모양을      
+그리면서 움직이는 애니메이션을 만드려고해 어떤식으로 해야하는지 알려줘          
+
+● 두 파트로 나눠서 설명할게요.
+
+  ---
+  1. 유휴 감지 (PlayerController)
+
+  조이스틱 입력 없음 → idleTime 누적 → 4초 초과 → UI 표시
+  조이스틱 입력 있음 → idleTime 리셋 → UI 숨기기
+
+  PlayerController.Update()에서 이미 입력 유무를 구분하고 있으니 거기에 타이머만
+   추가하면 돼요.
+
+  ---
+  2. 무한대(∞) 경로 애니메이션
+
+  무한대 곡선 수식:
+  x(t) = sin(t)
+  y(t) = sin(t) * cos(t)
+
+  DOTween의 DOPath()로 경로 배열을 따라 이동하는 게 가장 깔끔해요:
+
+  // 무한대 모양 waypoint 생성
+  Vector3[] GetInfinityPath(Vector2 center, float size, int count = 30)
+  {
+      var points = new Vector3[count];
+      for (int i = 0; i < count; i++)
+      {
+          float t = (float)i / count * Mathf.PI * 2;
+          float x = size * Mathf.Sin(t);
+          float y = size * Mathf.Sin(t) * Mathf.Cos(t);
+          points[i] = new Vector3(center.x + x, center.y + y, 0);
+      }
+      return points;
+  }
+
+  // 재생
+  finger.DOPath(GetInfinityPath(screenCenter, 80f), 3f, PathType.CatmullRom)
+        .SetLoops(-1, LoopType.Restart)
+        .SetEase(Ease.Linear);
+
+  PathType.CatmullRom으로 하면 waypoint 사이가 부드럽게 이어져요.
+
+  ---
+  전체 구조
+
+  IdleHintUI.cs (Screen Space Overlay)
+    - Show() → DOPath 무한루프 시작
+    - Hide() → DOTween Kill + SetActive(false)
+
+  PlayerController
+    - float idleTime
+    - 4초 초과 → Managers.UIM.idleHintUI.Show()
+    - 입력 감지 → Managers.UIM.idleHintUI.Hide()
+
+  UIManager에 IdleHintUI 참조 추가하는 방식이 기존 패턴과 일관돼요.
+
+  짜볼게요?

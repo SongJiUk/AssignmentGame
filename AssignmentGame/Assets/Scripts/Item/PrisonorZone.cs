@@ -7,7 +7,6 @@ using DG.Tweening;
 using System;
 using System.Threading;
 
-//2���� ������, Prisonor, HandCuff
 public class PrisonerZone : BaseController
 {
     [SerializeField] Transform handCuffPos;
@@ -23,13 +22,17 @@ public class PrisonerZone : BaseController
     public Transform[] RoomWayPoint => roomWayPoint;
 
     Stack<Transform> handCuffStack = new();
+    public int HandCuffCount => handCuffStack.Count;
     Queue<PrisonerController> prisonerQueue = new();
 
 
     const float spacingY = 0.08f;
     bool isGiving = false;
-    CancellationTokenSource cts;
+    CancellationTokenSource playercts;
+    CancellationTokenSource jailercts;
+    CancellationTokenSource deskcts;
     int workerCount = 0;
+    JailerController jailer;
     private void Start()
     {
         Init();
@@ -49,12 +52,25 @@ public class PrisonerZone : BaseController
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
             workerCount++;
-            cts?.Cancel();
-            cts?.Dispose();
+            playercts?.Cancel();
+            playercts?.Dispose();
             zoneImage.color = Color.green;
 
-            cts = new CancellationTokenSource();
-            StartCheck(Managers.GameM.player);
+            playercts = new CancellationTokenSource();
+            AsyncCheck(Managers.GameM.player, playercts).Forget();
+            TryGiveHandCuffFromDesk();
+        }
+
+        if(other.gameObject.layer == LayerMask.NameToLayer("Jailer"))
+        {
+            if (jailer == null) jailer = other.GetComponent<JailerController>();
+
+            workerCount++;
+            jailercts?.Cancel();
+            jailercts?.Dispose();
+            zoneImage.color = Color.green;
+            jailercts = new CancellationTokenSource();
+            AsyncCheck(jailer, jailercts).Forget();
             TryGiveHandCuffFromDesk();
         }
     }
@@ -65,9 +81,19 @@ public class PrisonerZone : BaseController
         {
             zoneImage.color = Color.white;
             workerCount--;
-            cts?.Cancel();
-            cts?.Dispose();
-            cts = null;
+            playercts?.Cancel();
+            playercts?.Dispose();
+            playercts = null;
+        }
+
+
+        if (other.gameObject.layer == LayerMask.NameToLayer("Jailer"))
+        {
+            zoneImage.color = Color.white;
+            workerCount--;
+            jailercts?.Cancel();
+            jailercts?.Dispose();
+            jailercts = null;
         }
     }
     #region HandCuff����
@@ -109,11 +135,11 @@ public class PrisonerZone : BaseController
     {
         PrisonerController prisoner = Managers.ObjectM.SpawnPrisoner(prisonerUntilHandCuffPos[0].position);
 
-        Define.PrisonorState arriveState = _index == prisonerUntilHandCuffPos.Length - 1
-            ? Define.PrisonorState.WaitingHandCuff
-            : Define.PrisonorState.WaitingInLine;
+        Define.PrisonerState arriveState = _index == prisonerUntilHandCuffPos.Length - 1
+            ? Define.PrisonerState.WaitingHandCuff
+            : Define.PrisonerState.WaitingInLine;
 
-
+        prisoner.Init();
         prisoner.SetInfo(prisonerUntilHandCuffPos[_index].position, arriveState, this);
         prisoner.transform.LookAt(prisonerUntilHandCuffPos[2].position);
         prisonerQueue.Enqueue(prisoner);
@@ -130,9 +156,9 @@ public class PrisonerZone : BaseController
         foreach (var prisoner in prisoners)
         {
 
-            Define.PrisonorState arriveState = i == prisonerUntilHandCuffPos.Length - 1
-                ? Define.PrisonorState.WaitingHandCuff
-                : Define.PrisonorState.WaitingInLine;
+            Define.PrisonerState arriveState = i == prisonerUntilHandCuffPos.Length - 1
+                ? Define.PrisonerState.WaitingHandCuff
+                : Define.PrisonerState.WaitingInLine;
 
             prisoner.MoveToWaiting(prisonerUntilHandCuffPos[i].position, arriveState);
             i--;
@@ -155,23 +181,21 @@ public class PrisonerZone : BaseController
 
 
     #endregion
-    public void StartCheck(PlayerController _player)
-    {
-        AsyncCheck(_player, cts).Forget();
-    }
+    
 
-    async UniTaskVoid AsyncCheck(PlayerController _player, CancellationTokenSource _token)
+    async UniTaskVoid AsyncCheck(IHandCuffGiver _giver, CancellationTokenSource _token)
     {
         try
         {
             while (true)
             {
                 PrisonerController prisoner = prisonerQueue.Count > 0 ? prisonerQueue.Peek() : null;
-                if (_player.FollowStackSystem.handCuffCount > 0)
+
+                if (_giver.HandCuffCount> 0)
                 {
                     if (prisoner != null && prisoner.IsWaitingHandCuff && prisoner.NeedMoreHandCuff)
                     {
-                        Transform handcuff = _player.FollowStackSystem.RemoveHandCuff();
+                        Transform handcuff = _giver.RemoveHandCuff();
                         if (handcuff != null)
                         {
                             SendHandCuffToPrisoner(handcuff, prisoner);
@@ -180,7 +204,7 @@ public class PrisonerZone : BaseController
                     }
                     else
                     {
-                        Transform handCuff = _player.FollowStackSystem.RemoveHandCuff();
+                        Transform handCuff = _giver.RemoveHandCuff();
                         if (handCuff != null)
                         {
                             AddToDesk(handCuff);
@@ -221,7 +245,10 @@ public class PrisonerZone : BaseController
         if (handCuffStack.Count == 0) return;
         if (isGiving) return;
 
-        AsyncGiveFromDesk(cts).Forget();
+        deskcts?.Cancel();
+        deskcts?.Dispose();
+        deskcts = new CancellationTokenSource();
+        AsyncGiveFromDesk(deskcts).Forget();
 
     }
 
@@ -257,7 +284,7 @@ public class PrisonerZone : BaseController
     {
         if (prisonerQueue.Peek() == _prisoner)
         {
-            _prisoner.ChangeState(Define.PrisonorState.WaitingHandCuff);
+            _prisoner.ChangeState(Define.PrisonerState.WaitingHandCuff);
         }
     }
 }

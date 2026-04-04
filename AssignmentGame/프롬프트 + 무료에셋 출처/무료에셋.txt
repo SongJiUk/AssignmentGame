@@ -1,0 +1,4 @@
+조이스틱 : https://assetstore.unity.com/packages/tools/input-management/joystick-pack-107631#asset_quality
+사용한 캐릭터 : https://assetstore.unity.com/packages/3d/characters/humanoids/humans/human-character-dummy-178395
+곡괭이 : https://assetstore.unity.com/packages/3d/props/tools/basic-pickaxe-33718
+아이콘 팩 : https://assetstore.unity.com/packages/3d/props/low-poly-3d-icons-pack-lite-295587#content

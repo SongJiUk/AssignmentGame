@@ -10,6 +10,9 @@ using System.Threading;
 public class HandCuffZone : BaseController
 {
     [SerializeField] Image zoneImage;
+    [SerializeField] GameObject maxText;
+
+
     const float baseY = 0.04f;
     const float spacingY = 0.08f;
     const int MaxCount = 50;
@@ -17,19 +20,31 @@ public class HandCuffZone : BaseController
     public int HandCuffCount => handCuffStack.Count;
     public bool IsFull => handCuffStack.Count >= MaxCount;
 
-    private CancellationTokenSource cts;
+    CancellationTokenSource playercts;
+    CancellationTokenSource jailercts;
+    JailerController jailer;
 
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
-            cts?.Cancel();
-            cts?.Dispose();
-            cts = new CancellationTokenSource();
+            playercts?.Cancel();
+            playercts?.Dispose();
+            playercts = new CancellationTokenSource();
             zoneImage.color = Color.green;
-            StartCheck(Managers.GameM.player);
+            AsyncCheck(Managers.GameM.player, playercts).Forget();
 
+        }
+
+        if(other.gameObject.layer == LayerMask.NameToLayer("Jailer"))
+        {
+            if (jailer == null) jailer = other.GetComponent<JailerController>();
+            jailercts?.Cancel();
+            jailercts?.Dispose();
+            jailercts = new CancellationTokenSource();
+            zoneImage.color = Color.green;
+            AsyncCheck(jailer, jailercts).Forget();
         }
     }
 
@@ -37,20 +52,25 @@ public class HandCuffZone : BaseController
     {
         if (other.gameObject.layer == LayerMask.NameToLayer("Player"))
         {
-            cts?.Cancel();
-            cts?.Dispose();
-            cts = null;
+            playercts?.Cancel();
+            playercts?.Dispose();
+            playercts = null;
+            zoneImage.color = Color.white;
+        }
+
+        if (other.gameObject.layer == LayerMask.NameToLayer("Jailer"))
+        {
+            jailercts?.Cancel();
+            jailercts?.Dispose();
+            jailercts = null;
             zoneImage.color = Color.white;
         }
     }
 
 
-    public void StartCheck(PlayerController _player)
-    {
-        AsyncCheck(_player, cts).Forget();
-    }
+    
 
-    async UniTaskVoid AsyncCheck(PlayerController _player, CancellationTokenSource _token)
+    async UniTaskVoid AsyncCheck(IHandCuffReceiver _receiver, CancellationTokenSource _token)
     {
         try
         {
@@ -59,13 +79,13 @@ public class HandCuffZone : BaseController
                 if (handCuffStack.Count > 0)
                 {
                     Transform handCuff = handCuffStack.Pop();
+                    maxText.SetActive(false);
                     if (handCuff == null) continue;
-                    Vector3 targetPos = _player.FollowStackSystem.HandCuffPosition;
-
-                    handCuff.DOJump(targetPos, jumpPower: 1f, numJumps: 1, duration: 0.1f)
+                    
+                    handCuff.DOJump(_receiver.HandCuffPosition, jumpPower: 1f, numJumps: 1, duration: 0.1f)
                         .OnComplete(() =>
                         {
-                            _player.FollowStackSystem.AddHandCuff(handCuff);
+                            _receiver.AddHandCuff(handCuff);
                         });
 
                 }
@@ -87,6 +107,8 @@ public class HandCuffZone : BaseController
         Vector3 pos = transform.position + Vector3.up * (baseY + spacingY * number);
         var handcuff = Managers.ObjectM.SpawnHandCuff(pos);
         handCuffStack.Push(handcuff);
+
+        if (IsFull) maxText.SetActive(IsFull);
     }
 
 }

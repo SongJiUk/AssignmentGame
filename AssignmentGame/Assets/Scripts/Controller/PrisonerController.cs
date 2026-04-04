@@ -3,80 +3,109 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using TMPro;
+using UnityEngine.UI;
 
-public class PrisonerController : BaseController
+public class PrisonerController : NPCController
 {
-    // 0.81(��Ȳ�� -> �˼��� �̰ɷ� ����)
     [SerializeField] GameObject obj;
     [SerializeField] GameObject HandCuff;
+    [SerializeField] Material[] materials;
+    [SerializeField] Material prisonerMaterial;
+
+
+    [SerializeField] SkinnedMeshRenderer render;
+    [SerializeField] TextMeshProUGUI handCuffText;
+    [SerializeField] Image handCuffFill;
+    [SerializeField] GameObject handCuffUI;
+    [SerializeField] GameObject NoCellUI;
+
 
     public bool IsArrived { get; private set; }
     [SerializeField] public bool IsWaitingHandCuff = false;
     Rigidbody rigid;
     public bool NeedMoreHandCuff => currentHandCuffs < needHandCuffs;
 
-    Define.PrisonorState prisonorState = Define.PrisonorState.Waiting;
-    Define.PrisonorState arriveState;
-    float speed = 2f;
+    Define.PrisonerState prisonorState = Define.PrisonerState.Waiting;
+    Define.PrisonerState arriveState;
+    
     Vector3 targetPos;
-    Animator anim;
+    
     PrisonerZone zone;
     [SerializeField] int needHandCuffs;
     [SerializeField] int currentHandCuffs;
 
     List<Transform> moneyList = new();
 
-    //TODO : ���� ���� ���� isKinematic ���ְ�, ���� �����ϸ� ���ֱ�
-    public void SetInfo(Vector3 _pos, Define.PrisonorState _arriveState, PrisonerZone _zone)
+    public override bool Init()
     {
-        if (anim == null) anim = GetComponent<Animator>();
+        if (!base.Init()) return false;
+
         if (rigid == null) rigid = GetComponent<Rigidbody>();
+        return true;
+    }
+    public void SetInfo(Vector3 _pos, Define.PrisonerState _arriveState, PrisonerZone _zone)
+    {
         rigid.isKinematic = true;
         HandCuff.SetActive(false);
-
+        Material material = materials[Random.Range(0, materials.Length)];
+        render.material = material;
         zone = _zone;
         targetPos = _pos;
         arriveState = _arriveState;
         needHandCuffs = Random.Range(1, 6);
         currentHandCuffs = 0;
         IsWaitingHandCuff = false;
-        ChangeState(Define.PrisonorState.Waiting);
+        ChangeState(Define.PrisonerState.Waiting);
     }
 
 
-    public void ChangeState(Define.PrisonorState _prisonorState)
+    public void ChangeState(Define.PrisonerState _prisonorState)
     {
         prisonorState = _prisonorState;
         switch (prisonorState)
         {
-            case Define.PrisonorState.Waiting:
+            case Define.PrisonerState.Waiting:
 
                 IsWaitingHandCuff = false;
                 anim.SetState(Define.State.Idle);
+                handCuffUI.SetActive(false);
+                NoCellUI.SetActive(false);
                 MoveAndArrive().Forget();
                 break;
-            case Define.PrisonorState.WaitingInLine:
+            case Define.PrisonerState.WaitingInLine:
                 IsWaitingHandCuff = false;
                 break;
 
-            case Define.PrisonorState.WaitingHandCuff:
+            case Define.PrisonerState.WaitingHandCuff:
                 IsWaitingHandCuff = true;
+                handCuffUI.SetActive(true);
+                handCuffText.text = $"{needHandCuffs}";
+                handCuffFill.fillAmount = 0;
                 break;
 
-            case Define.PrisonorState.WalkingRoom:
+            case Define.PrisonerState.WalkingRoom:
                 IsWaitingHandCuff = false;
+                render.material = prisonerMaterial;
+                handCuffUI.SetActive(false);
                 AsyncWalkToRoom().Forget();
                 break;
 
-            case Define.PrisonorState.WaitingRoom:
-                //TODO : �� �ø��� �Ѿ��?
+            case Define.PrisonerState.WaitingRoom:
+                //TODO ; 대기하고있다가, RoomUpgrade되면 차레차례 들어가야됌 영상에없는데 시간남으면 해보기
+                if(!zone.PrisonRoom.HasWaitingPrisoner)
+                {
+                    NoCellUI.SetActive(true);
+                    zone.PrisonRoom.SetWaitingPrisoner(true);
+                }
+                //TODO : 업그레이드 되면 초기화 및 false로 변경
                 break;
 
-            case Define.PrisonorState.InRoom:
+            case Define.PrisonerState.InRoom:
                 rigid.isKinematic = false;
+                zone.PrisonRoom.Enter();
                 transform.LookAt(zone.RoomWayPoint[0]);
                 break;
-
         }
     }
 
@@ -87,23 +116,23 @@ public class PrisonerController : BaseController
 
         if (zone.PrisonRoom.HasSpace)
         {
-            zone.PrisonRoom.Enter();
+            zone.PrisonRoom.Reserve();
             transform.LookAt(zone.RoomWayPoint[1]);
             await AsyncMoveToPosition(zone.RoomWayPoint[1].position);
-            ChangeState(Define.PrisonorState.InRoom);
+            ChangeState(Define.PrisonerState.InRoom);
         }
         else
         {
             transform.LookAt(zone.RoomWayPoint[1]);
             rigid.isKinematic = false;
-            ChangeState(Define.PrisonorState.WaitingRoom);
+            ChangeState(Define.PrisonerState.WaitingRoom);
         }
     }
-    public void MoveToWaiting(Vector3 _pos, Define.PrisonorState _arriveState)
+    public void MoveToWaiting(Vector3 _pos, Define.PrisonerState _arriveState)
     {
         arriveState = _arriveState;
         targetPos = _pos;
-        ChangeState(Define.PrisonorState.Waiting);
+        ChangeState(Define.PrisonerState.Waiting);
     }
     async UniTaskVoid MoveAndArrive()
     {
@@ -111,29 +140,25 @@ public class PrisonerController : BaseController
         ChangeState(arriveState);
     }
 
-    async UniTask AsyncMoveToPosition(Vector3 _targetPos)
+    protected override async UniTask AsyncMoveToPosition(Vector3 _targetPos)
     {
         IsArrived = false;
-        while ((transform.position - _targetPos).sqrMagnitude > 0.01f)
-        {
-            transform.position = Vector3.MoveTowards(transform.position, _targetPos, Time.deltaTime * speed);
-            anim.SetState(Define.State.Run);
-            await UniTask.Yield();
-        }
+        await base.AsyncMoveToPosition(_targetPos);
         IsArrived = true;
-        anim.SetState(Define.State.Idle);
     }
 
     public void ReceiveHandCuff()
     {
-        currentHandCuffs++;
+        currentHandCuffs++; 
+        handCuffText.text = $"{needHandCuffs - currentHandCuffs}";
+        handCuffFill.fillAmount = (float)currentHandCuffs/ needHandCuffs;
         if (currentHandCuffs >= needHandCuffs)
         {
             CreateMoney();
             anim.SetBool("IsHandCuff", true);
             HandCuff.SetActive(true);
             zone.OnPrisonerLeft();
-            ChangeState(Define.PrisonorState.WalkingRoom);
+            ChangeState(Define.PrisonerState.WalkingRoom);
         }
     }
 
@@ -157,5 +182,9 @@ public class PrisonerController : BaseController
         moneyList.Clear();
     }
 
-
+    private void Update()
+    {
+        if(NoCellUI.activeSelf)
+            NoCellUI.transform.LookAt(Camera.main.transform);
+    }
 }

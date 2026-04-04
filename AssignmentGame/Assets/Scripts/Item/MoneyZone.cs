@@ -12,6 +12,7 @@ public class MoneyZone : BaseController
 
     public PurchaseZone DrillZone => drillzone;
     Stack<Transform> moneyStack = new();
+    public int MoneyCount => moneyStack.Count;
     float baseY = 0.14f;
     float spacingY = 0.07f;
     float spacingX = 0.4f;

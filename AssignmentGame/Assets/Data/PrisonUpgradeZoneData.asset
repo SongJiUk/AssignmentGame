@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: PrisonUpgradeZoneData
   m_EditorClassIdentifier: 
   cost: 50
-  type: 0
+  type: 3
   unLockType: 0
+  npcType: 0
   npcSpawnCount: 0

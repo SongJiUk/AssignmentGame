@@ -1,13 +1,16 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
 
 public class FollowStackSystem : MonoBehaviour
 {
-
+    const int MaxHandCuff = 30;
+    float lastMaxTiem = -999f;
     [SerializeField] Transform ItemRowPos_1;
     [SerializeField] Transform ItemRowPos_2;
     [SerializeField] Transform HandCuffPos;
+    [SerializeField] Transform MaxTextPos;
 
     const float mineralSpacing = 0.2f;
     const float handCuffSpacing = 0.08f;
@@ -25,11 +28,12 @@ public class FollowStackSystem : MonoBehaviour
     public int MoneyCount => moneyStack.Count;
     public int handCuffCount => handCuffStack.Count;
 
+    public bool IsHandCuffFull => handCuffCount >= MaxHandCuff;
     public void AddMineral()
     {
         if (Managers.GameM.player.CurrentWeaponData.maxMineralCount <= mineralStack.Count)
         {
-            //TODO : UI MAX띄우기
+            Managers.UIM.TryShowMax(MaxTextPos.position, ref lastMaxTiem);
             return;
         }
 
@@ -95,7 +99,7 @@ public class FollowStackSystem : MonoBehaviour
         if (!hasReceivedFirstMoney)
         {
             hasReceivedFirstMoney = true;
-            Managers.GameM.cam.PlayCutScene(_zone.DrillZone, 2f).Forget();
+            Managers.GameM.cam.PlayCutScene(2f, 0, new GameObject[] { _zone.DrillZone.gameObject }).Forget();
         }
     }
 
@@ -119,7 +123,6 @@ public class FollowStackSystem : MonoBehaviour
         _handCuff.localPosition = Vector3.up * handCuffSpacing * number;
         _handCuff.localRotation = Quaternion.identity;
         handCuffStack.Push(_handCuff);
-
     }
 
     public Transform RemoveHandCuff()

@@ -12,7 +12,7 @@ public static class Define
         SitMachine
     }
 
-    public enum PrisonorState
+    public enum PrisonerState
     {
         Waiting,
         WaitingInLine,
@@ -21,6 +21,18 @@ public static class Define
         WaitingRoom,
         InRoom
     }
+
+    public enum MiningWorkerState
+    {
+        MovingToMineral,
+        Mining,
+    }
+
+    public enum JailerState
+    {
+        Walk
+    }
+
 
     public enum WeaponState
     {
@@ -47,7 +59,33 @@ public static class Define
 
     public enum UnLockType
     {
+        None,
         Drill,
         MiningMachine,
+    }
+    public enum PurchaseType
+    {
+        ActivateObject,
+        UnLockPlayer,
+        SpawnNPC,
+        UpgradeRoom
+    }
+    public enum NPCType
+    {
+        None,
+        MiningWorker,
+        Jailer
+    }
+
+    public enum TutorialStep
+    {
+        GoToMineralZone,
+        MineMineral,
+        GoToMachineZone,
+        GetHandCuff,
+        GoToPrisonerZone,
+        GetMoney,
+        Complete
+        
     }
 }

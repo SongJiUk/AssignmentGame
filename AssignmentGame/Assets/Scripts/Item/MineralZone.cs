@@ -74,4 +74,24 @@ public class MineralZone : BaseController
         .SetEase(Ease.OutBack);
     }
 
+    public Mineral GetNearestMineral(Vector3 _pos)
+    {
+        Mineral nearest = null;
+        float minDist = float.MaxValue;
+
+        foreach(var m in minerals)
+        {
+            if (!m.gameObject.activeSelf || m.IsTargeted) continue;
+
+            float dist = (m.transform.position - _pos).sqrMagnitude;
+            if(dist < minDist)
+            {
+                minDist = dist;
+                nearest = m;
+            }
+        }
+
+        return nearest;
+    }
+
 }

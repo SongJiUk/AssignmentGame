@@ -15,6 +15,14 @@ public class PurchaseZone : BaseController
     [SerializeField] Image costFill;
     [SerializeField] GameObject[] targets;
     [SerializeField] PurchaseZone[] nextZone;
+    [SerializeField] Transform[] spawnPoints;
+
+    [SerializeField] MineralZone mineralZone;
+    [SerializeField] MachineZone machineZone;
+    [SerializeField] HandCuffZone handCuffZone;
+    [SerializeField] PrisonerZone prisonerZone;
+    [SerializeField] PrisonRoom prisonRoom;
+    
 
     int baseCost;
     int remainCost;
@@ -32,11 +40,11 @@ public class PurchaseZone : BaseController
         remainCost = baseCost;
         if (costText != null) costText.text = remainCost.ToString();
         if (costFill != null) costFill.fillAmount = 0f;
-
-
+       
         return true;
     }
 
+    
     void OnTriggerEnter(Collider other)
     {
         if (!isReady) return;
@@ -122,6 +130,7 @@ public class PurchaseZone : BaseController
             Vector3 originScale = zone.transform.localScale;
             zone.gameObject.SetActive(true);
             zone.isReady = false;
+            zone.transform.localScale = Vector3.zero;
 
             DOTween.Sequence()
             .Append(zone.transform.DOScale(originScale * 1.5f, 0.4f).SetEase(Ease.OutBack))
@@ -129,7 +138,7 @@ public class PurchaseZone : BaseController
             .OnComplete(() => zone.isReady = true);
         }
 
-        if (data.type == PurchaseType.ActivateObject)
+        if (data.type == Define.PurchaseType.ActivateObject)
         {
             foreach (var target in targets)
             {
@@ -137,16 +146,45 @@ public class PurchaseZone : BaseController
             }
 
         }
-        else if (data.type == PurchaseType.UnLockPlayer)
+        else if (data.type == Define.PurchaseType.UnLockPlayer)
         {
             Managers.GameM.player.OnUnLock(data.unLockType);
         }
-        else if (data.type == PurchaseType.SpawnNPC)
+        else if (data.type == Define.PurchaseType.SpawnNPC)
         {
-            // 광부, 경찰 등 NPC 스폰
-            // TODO: ObjectManager에 SpawnNPC() 구현 후 연결
-            // for (int i = 0; i < data.npcSpawnCount; i++)
-            //     Managers.ObjectM.SpawnNPC();
+            switch (data.npcType)
+            {
+                case Define.NPCType.MiningWorker:
+
+                    for(int i =0; i<data.npcSpawnCount; i++)
+                    {
+                        if(spawnPoints[i] != null)
+                        {
+                            var worker = Managers.ObjectM.SpawnMiningWorker(spawnPoints[i].position);
+                            worker.Init();
+                            worker.SetInfo(mineralZone, machineZone);
+                        }
+                        
+                    }
+                    break;
+
+                case Define.NPCType.Jailer:
+                    for(int i =0; i<data.npcSpawnCount; i++)
+                    {
+                        if(spawnPoints[i] != null)
+                        {
+                            var jailer = Managers.ObjectM.SpawnJailer(spawnPoints[i].position);
+                            jailer.Init();
+                            jailer.SetInfo(prisonerZone, handCuffZone);
+
+                        }
+                    }
+                    break;
+            }
+        }
+        else if (data.type == Define.PurchaseType.UpgradeRoom)
+        {
+            if(targets != null) prisonRoom.Upgrade(targets).Forget();
         }
 
         gameObject.SetActive(false);

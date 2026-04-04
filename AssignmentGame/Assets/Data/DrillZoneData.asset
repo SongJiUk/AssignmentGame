@@ -14,5 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cost: 20
   type: 1
-  unLockType: 0
+  unLockType: 1
+  npcType: 0
   npcSpawnCount: 0
+  spawnPos: []

@@ -15,4 +15,5 @@ MonoBehaviour:
   cost: 50
   type: 2
   unLockType: 0
-  npcSpawnCount: 0
+  npcType: 1
+  npcSpawnCount: 3

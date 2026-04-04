@@ -11,6 +11,7 @@ public class MachineZone : BaseController
 {
     const int MaxCount = 50;
     [SerializeField] Image zoneImage;
+    [SerializeField] GameObject maxText;
 
     public event Action<Transform> OnMineralArrive;
     Stack<Transform> convertStack = new();
@@ -74,7 +75,7 @@ public class MachineZone : BaseController
         _mineral.DOJump(targetPos, jumpPower: 2f, numJumps: 1, duration: 0.1f)
         .OnComplete(() =>
         {
-            _mineral.DOScale(originScale, 0.3f)
+            _mineral.DOScale(originScale, 0.2f)
             .From(Vector3.zero)
             .SetEase(Ease.OutBack);
         });
@@ -94,7 +95,9 @@ public class MachineZone : BaseController
             {
                 if (IsFull)
                 {
-                    await UniTask.Delay(TimeSpan.FromSeconds(0.05f), cancellationToken: _token.Token);
+                    maxText.SetActive(true);
+                    await UniTask.WaitUntil(() => !IsFull, cancellationToken: _token.Token);
+                    maxText.SetActive(false);
                     continue;
                 }
 

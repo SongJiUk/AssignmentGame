@@ -9,7 +9,7 @@ public class ObjectManager : MonoBehaviour
 {
 
     public PlayerController player { get; private set; }
-
+    static readonly Vector3 BackMineralScale = new Vector3(0.3f, 0.18f, 0.15f);
 
     public PlayerController SpawnPlayer(Vector3 _pos)
     {
@@ -38,9 +38,11 @@ public class ObjectManager : MonoBehaviour
         GameObject go = Managers.ResourceM.Instantiate("BackMineral", _pooling: true);
         if (go == null) return null;
 
+        DOTween.Kill(go);
+
         go.transform.position = _pos;
-        Vector3 originalScale = go.transform.localScale;
-        go.transform.DOScale(originalScale, 0.3f)
+        go.transform.localScale = BackMineralScale;
+        go.transform.DOScale(BackMineralScale, 0.3f)
         .From(Vector3.zero)
         .SetEase(Ease.OutBack);
 
@@ -78,6 +80,28 @@ public class ObjectManager : MonoBehaviour
 
         go.transform.position = _pos;
         return go.transform;
+    }
+
+    public MiningWorkerController SpawnMiningWorker(Vector3 _pos)
+    {
+        GameObject go = Managers.ResourceM.Instantiate("MiningWorker");
+        if (go == null) return null;
+
+        MiningWorkerController worker = go.GetOrAddComponent<MiningWorkerController>();
+        worker.transform.position = _pos;
+
+        return worker;
+    }
+
+    public JailerController SpawnJailer(Vector3 _pos)
+    {
+        GameObject go = Managers.ResourceM.Instantiate("Jailer");
+        if (go == null) return null;
+
+        JailerController jailer = go.GetOrAddComponent<JailerController>();
+        jailer.transform.position = _pos;
+
+        return jailer;
     }
 
     public void DeSpawn<T>(T _obj) where T : Component

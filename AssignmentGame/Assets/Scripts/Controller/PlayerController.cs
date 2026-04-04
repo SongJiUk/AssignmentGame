@@ -6,7 +6,7 @@ using Cysharp.Threading.Tasks;
 using static Define;
 using static Util;
 
-public class PlayerController : CreatureController
+public class PlayerController : CreatureController, IHandCuffReceiver, IHandCuffGiver
 {
 
     [SerializeField] GameObject pick;
@@ -24,6 +24,12 @@ public class PlayerController : CreatureController
     Define.State currentState = State.Idle;
     Mineral mineral;
     bool isBoardingMachine = false;
+
+    public Vector3 HandCuffPosition => followStackSystem.HandCuffPosition;
+    public bool IsFullStack => followStackSystem.IsHandCuffFull;
+
+    public int HandCuffCount => followStackSystem.handCuffCount;
+
     public override bool Init()
     {
         if (!base.Init()) return false;
@@ -207,5 +213,15 @@ public class PlayerController : CreatureController
 
         transform.rotation = Quaternion.Slerp(transform.rotation, rot, Time.deltaTime * moveToRot);
 
+    }
+
+    public void AddHandCuff(Transform _handCuff)
+    {
+        followStackSystem.AddHandCuff(_handCuff);
+    }
+
+    public Transform RemoveHandCuff()
+    {
+        return followStackSystem.RemoveHandCuff();
     }
 }
